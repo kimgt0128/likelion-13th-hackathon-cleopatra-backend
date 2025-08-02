@@ -4,4 +4,7 @@
 # 서비스 이름
 
 # 기술 스택
-
+- SpringBoot 3
+- Git Action + Docker
+- MySQL 8.0
+- 
