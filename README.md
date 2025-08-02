@@ -7,4 +7,4 @@
 - SpringBoot 3
 - Git Action + Docker
 - MySQL 8.0
-- 
+- 셀레늄 웹크롤링
