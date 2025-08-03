@@ -1,6 +1,6 @@
 -- 데이터베이스 생성 (이미 존재하면 제외)
 CREATE DATABASE IF NOT EXISTS cleopatra CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE cleopatra;
+USE cleopatra0;
 
 -- member 테이블 생성: username 컬럼 단일 칼럼으로 구성
 CREATE TABLE IF NOT EXISTS member (
