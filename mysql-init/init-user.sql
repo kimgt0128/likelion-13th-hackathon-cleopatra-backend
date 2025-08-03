@@ -1,2 +1,2 @@
-ALTER USER 'cleopatra'@'%' IDENTIFIED WITH mysql_native_password BY '1234';
+ALTER USER '${MYSQL_USER}'@'%' IDENTIFIED WITH mysql_native_password BY '${MYSQL_PASSWORD}';
 FLUSH PRIVILEGES;
