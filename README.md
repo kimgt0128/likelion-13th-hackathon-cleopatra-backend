@@ -3,6 +3,8 @@
 
 # 서비스 이름
 
+# 서비스 설명
+자영업자들이 노원구에서 창업 시 보고서제공
 # 기술 스택
 - SpringBoot 3
 - Git Action + Docker
