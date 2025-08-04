@@ -45,3 +45,6 @@ src/main/resources/application-dev.yml
 
 ### mysql-init 파일
 mysql-init/*
+
+### nginx 설정 파일
+nginx/*
