@@ -42,3 +42,6 @@ src/main/resources/application-dev.yml
 
 ### 로컬 환경 변수
 .env
+
+### mysql-init 파일
+mysql-init/*
