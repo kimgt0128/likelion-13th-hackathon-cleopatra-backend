@@ -45,7 +45,7 @@ dependencies {
 
     // SpringDoc - Swagger UI
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
-    implementation 'com.amazonaws:aws-java-sdk-s3:1.12.671'
+
 }
 
 tasks.named('test') {
