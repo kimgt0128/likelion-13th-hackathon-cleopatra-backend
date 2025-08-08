@@ -1,11 +1,11 @@
-package com.likelion.cleopatra.global.exception;
+package com.likelion.cleopatra.global.exception.code;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum GlobalErrorCode implements ErrorCode{
+public enum GlobalErrorCode implements ErrorCode {
 
     BAD_REQUEST(400, "잘못된 요청입니다"),
     METHOD_NOT_ALLOWED(405, "허용되지 않는 메소드입니다"),
