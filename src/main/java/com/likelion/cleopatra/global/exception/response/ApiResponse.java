@@ -1,8 +1,6 @@
 package com.likelion.cleopatra.global.exception.response;
 
-
 import lombok.Getter;
-import org.springdoc.api.ErrorMessage;
 
 @Getter
 public class ApiResponse<T> {
@@ -12,7 +10,7 @@ public class ApiResponse<T> {
 
     private String status;
     private T data;
-    private ErrorMessage errorMessage;
+    private String message;
 
     public static ApiResponse<?> success() {
         return new ApiResponse<>(SUCCESS_STATUS, null, null);
@@ -22,20 +20,26 @@ public class ApiResponse<T> {
         return new ApiResponse<>(SUCCESS_STATUS, data, null);
     }
 
-    // 메시지가 필요한 success의 경우 추가하기
 
-
-    public static ApiResponse<?> fail(ErrorMessage errorMessage) {
-        return new ApiResponse<>(FAIL_STATUS, null, errorMessage);
+    public static <T> ApiResponse<T> success(T data, String message) {
+        return new ApiResponse<>(SUCCESS_STATUS, data, message);
     }
 
+
+    public static ApiResponse<?> fail(String message) {
+        return new ApiResponse<>(FAIL_STATUS, null, message);
+    }
+
+    public static <T> ApiResponse<T> fail(T data, String message) {
+        return new ApiResponse<>(FAIL_STATUS, data, message);
+    }
 
     protected ApiResponse() {
     }
 
-    private ApiResponse(String status, T data, ErrorMessage errorMessage) {
+    private ApiResponse(String status, T data, String message) {
         this.status = status;
         this.data = data;
-        this.errorMessage = errorMessage;
+        this.message = message;
     }
 }
