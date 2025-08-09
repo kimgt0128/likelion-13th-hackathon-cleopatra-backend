@@ -30,11 +30,13 @@ public class NaverApiService {
      * - .json 확장자는 공식 문서상 생략 권장
      * - 쿼리 파라미터에 띄어쓰기 등 특수문자는 내부에서 자동 인코딩 처리됨
      */
-    public  Mono<NaverBlogSearchRes> searchBlog(String query) {
+    public  Mono<NaverBlogSearchRes> searchBlog(String query, int display, int start) {
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/v1/search/blog.json")
                         .queryParam("query", query)
+                        .queryParam("display", display)
+                        .queryParam("start", start)
                         .build())
                 .retrieve()
                 .bodyToMono(NaverBlogSearchRes.class);
