@@ -6,7 +6,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
-
 import org.springframework.http.HttpHeaders;
 
 /**
@@ -23,6 +22,19 @@ public class WebClientConfig {
 
     private ApiInfo naver = new ApiInfo();
 
+    /**
+     * 네이버 API 호출용 WebClient 빈 생성
+     *
+     * @return WebClient
+     *
+     * 설정 포인트:
+     * - baseUrl: 네이버 API 기본 URL (예: https://openapi.naver.com)
+     * - Content-Type: JSON 요청/응답을 사용하기 위해 application/json 지정
+     * - X-Naver-Client-Id, X-Naver-Client-Secret: 네이버 API 인증 헤더
+     *
+     * 이렇게 Bean으로 등록하면 서비스 레이어에서 @Qualifier("naverWebClient")로 주입 가능
+     * 여러 API(WebClient)를 쓸 때 각기 다른 빈 이름으로 관리하면 확장성 ↑
+     */
     @Bean(name = "naverWebClient")
     public WebClient naverWebClient() {
         return WebClient.builder()
