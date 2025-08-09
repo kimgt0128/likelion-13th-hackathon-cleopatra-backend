@@ -18,6 +18,13 @@ services:
       - ./mysql-init:/docker-entrypoint-initdb.d
     networks:
       - my-network
+    deploy:
+      resources:
+        limits:
+          memory: 800M    # MySQL 메모리 최대 800MB 제한
+        reservations:
+          memory: 400M    # MySQL 최소 예약 메모리 400MB
+    cpu_shares: 512     # CPU 우선순위 (기본 1024), 512는 절반 정도 할당
 
 
   application:
