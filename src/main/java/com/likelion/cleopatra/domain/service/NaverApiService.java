@@ -1,7 +1,6 @@
 package com.likelion.cleopatra.domain.service;
 
-import com.likelion.cleopatra.domain.dto.NaverBlogSearchRes;
-import lombok.RequiredArgsConstructor;
+import com.likelion.cleopatra.domain.dto.blog.NaverBlogSearchRes;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;

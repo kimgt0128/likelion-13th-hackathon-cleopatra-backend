@@ -1,7 +1,9 @@
-package com.likelion.cleopatra.domain.dto;
+package com.likelion.cleopatra.domain.dto.blog;
 
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.List;
 
 @Getter
 @Setter
