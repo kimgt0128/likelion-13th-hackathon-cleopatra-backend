@@ -31,7 +31,8 @@ public class NaverApiService {
      */
     public Mono<String> searchBlog(String query) {
         return webClient.get()
-                .uri(uriBuilder -> uriBuilder.path("v1/search/blog")
+                .uri(uriBuilder -> uriBuilder
+                        .path("/v1/search/blog.json")
                         .queryParam("query", query)
                         .build())
                 .retrieve()
