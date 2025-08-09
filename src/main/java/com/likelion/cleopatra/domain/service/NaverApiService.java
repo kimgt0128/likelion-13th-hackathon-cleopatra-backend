@@ -1,6 +1,7 @@
 package com.likelion.cleopatra.domain.service;
 
 import com.likelion.cleopatra.domain.dto.blog.NaverBlogSearchRes;
+import com.likelion.cleopatra.domain.dto.cafe.NaverCafeSearchRes;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -36,8 +37,29 @@ public class NaverApiService {
                         .queryParam("query", query)
                         .queryParam("display", display)
                         .queryParam("start", start)
+                        .queryParam("sort", "date")
                         .build())
                 .retrieve()
                 .bodyToMono(NaverBlogSearchRes.class);
+    }
+
+    /**
+     * 네이버 카페글 검색 API 비동기 호출
+     *
+     * @param query   검색어
+     * @param display 표시 개수 (최대 100)
+     * @param start   시작 위치 (최대 1000)
+     */
+    public Mono<NaverCafeSearchRes> searchCafe(String query, int display, int start) {
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/v1/search/cafearticle.json") // 📌 카페글 검색 엔드포인트
+                        .queryParam("query", query)
+                        .queryParam("display", display)
+                        .queryParam("start", start)
+                        .queryParam("sort", "date")
+                        .build())
+                .retrieve()
+                .bodyToMono(NaverCafeSearchRes.class);
     }
 }
