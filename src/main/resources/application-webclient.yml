@@ -1,0 +1,6 @@
+external:
+  api:
+    naver:
+      base-url: ${NAVER_BASE_URL}
+      client-id: ${NAVER_CLIENT_ID}
+      client-secret: ${NAVER_CLIENT_SECRET}
