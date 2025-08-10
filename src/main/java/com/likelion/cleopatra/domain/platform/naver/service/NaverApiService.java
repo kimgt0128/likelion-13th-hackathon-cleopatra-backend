@@ -1,7 +1,7 @@
-package com.likelion.cleopatra.domain.service;
+package com.likelion.cleopatra.domain.platform.naver.service;
 
-import com.likelion.cleopatra.domain.dto.blog.NaverBlogSearchRes;
-import com.likelion.cleopatra.domain.dto.cafe.NaverCafeSearchRes;
+import com.likelion.cleopatra.domain.platform.naver.dto.blog.NaverBlogSearchRes;
+import com.likelion.cleopatra.domain.platform.naver.dto.cafe.NaverCafeSearchRes;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -53,7 +53,7 @@ public class NaverApiService {
     public Mono<NaverCafeSearchRes> searchCafe(String query, int display, int start) {
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
-                        .path("/v1/search/cafearticle.json") // 📌 카페글 검색 엔드포인트
+                        .path("/v1/search/cafearticle.json") // 카페글 검색 엔드포인트
                         .queryParam("query", query)
                         .queryParam("display", display)
                         .queryParam("start", start)

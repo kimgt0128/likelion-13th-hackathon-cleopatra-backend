@@ -1,4 +1,4 @@
-package com.likelion.cleopatra.domain.dto.cafe;
+package com.likelion.cleopatra.domain.platform.naver.dto.cafe;
 
 import lombok.Getter;
 import lombok.Setter;
