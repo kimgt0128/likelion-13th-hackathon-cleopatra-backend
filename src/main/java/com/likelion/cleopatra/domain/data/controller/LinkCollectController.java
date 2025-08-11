@@ -1,7 +1,5 @@
 package com.likelion.cleopatra.domain.data.controller;
 
-import com.likelion.cleopatra.domain.common.enums.District;
-import com.likelion.cleopatra.domain.common.enums.Neighborhood;
 import com.likelion.cleopatra.domain.data.dto.CollectNaverBlogReq;
 import com.likelion.cleopatra.domain.data.service.LinkCollectorService;
 import lombok.RequiredArgsConstructor;

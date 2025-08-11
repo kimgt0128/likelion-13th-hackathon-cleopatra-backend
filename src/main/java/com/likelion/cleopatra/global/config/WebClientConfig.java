@@ -1,6 +1,7 @@
 package com.likelion.cleopatra.global.config;
 
 import com.likelion.cleopatra.global.dto.ApiInfo;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,7 +21,14 @@ import org.springframework.http.HttpHeaders;
 @Configuration
 public class WebClientConfig {
 
-    private ApiInfo naver = new ApiInfo();
+    @Value("${service.naver.url}")
+    private String naverBaseUrl;
+    @Value("${service.naver.client-id}")
+    private String naverClientId;
+    @Value("${service.naver.client-secret}")
+    private String naverClientSecret;
+
+    //private ApiInfo naver = new ApiInfo(naverBaseUrl, naverClientId, naverClientSecret);
 
     /**
      * 네이버 API 호출용 WebClient 빈 생성
@@ -38,10 +46,10 @@ public class WebClientConfig {
     @Bean(name = "naverWebClient")
     public WebClient naverWebClient() {
         return WebClient.builder()
-                .baseUrl(naver.getBaseUrl())
+                .baseUrl(naverBaseUrl)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .defaultHeader("X-Naver-Client-Id", naver.getClientId())
-                .defaultHeader("X-Naver-Client-Secret", naver.getClientSecret())
+                .defaultHeader("X-Naver-Client-Id", naverClientId)
+                .defaultHeader("X-Naver-Client-Secret", naverClientSecret)
                 .build();
     }
 }

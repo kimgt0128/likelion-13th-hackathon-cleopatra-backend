@@ -1,7 +1,7 @@
 package com.likelion.cleopatra.domain.data.dto;
 
-import com.likelion.cleopatra.domain.common.enums.District;
-import com.likelion.cleopatra.domain.common.enums.Neighborhood;
+import com.likelion.cleopatra.domain.common.enums.addrdss.District;
+import com.likelion.cleopatra.domain.common.enums.addrdss.Neighborhood;
 
 public record CollectNaverBlogReq(
         String primary,

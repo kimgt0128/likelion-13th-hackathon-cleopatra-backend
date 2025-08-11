@@ -1,4 +1,4 @@
-package com.likelion.cleopatra.domain.common.enums;
+package com.likelion.cleopatra.domain.common.enums.addrdss;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;

@@ -1,6 +1,5 @@
-external:
-  api:
-    naver:
-      base-url: ${NAVER_BASE_URL}
-      client-id: ${NAVER_CLIENT_ID}
-      client-secret: ${NAVER_CLIENT_SECRET}
+service:
+  naver:
+    url: ${NAVER_BASE_URL}          # 예: https://openapi.naver.com
+    client-id: ${NAVER_CLIENT_ID}
+    client-secret: ${NAVER_CLIENT_SECRET}
