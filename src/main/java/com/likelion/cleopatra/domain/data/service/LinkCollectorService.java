@@ -39,8 +39,7 @@ public class LinkCollectorService {
         int start   = Optional.ofNullable(req.start()).orElse(1);
 
         // 검색어: "행정동(한글) + 공백 + 2차 카테고리(한글)"
-        String secondary = Optional.ofNullable(req.secondary()).orElse("").trim();
-        String query = req.neighborhood().getKo() + " " + secondary;
+        String query = req.neighborhood().getKo() + " " + req.secondary().getKo();
 
         NaverBlogSearchRes res = naverApiService.searchBlog(query, display, start).block();
 

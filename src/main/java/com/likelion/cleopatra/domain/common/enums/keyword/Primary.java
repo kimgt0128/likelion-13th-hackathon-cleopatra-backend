@@ -3,8 +3,21 @@ package com.likelion.cleopatra.domain.common.enums.keyword;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 
+
+/**
+ * 1차 카테고리(대분류).
+ * - 직렬화(@JsonValue)는 한글 라벨(외식업/서비스업/도매업)로 나갑니다.
+ * - 역직렬화(@JsonCreator)는 한글 라벨 또는 영문 enum 이름(FOOD_SERVICE/SERVICE/WHOLESALE) 모두 허용합니다.
+ */
+@Schema(
+        name = "Primary",
+        description = "1차 카테고리(대분류)",
+        example = "외식업",
+        allowableValues = {"외식업", "서비스업", "도매업"}
+)
 @Getter
 public enum Primary {
 

@@ -3,6 +3,8 @@ package com.likelion.cleopatra.domain.data.document;
 import com.likelion.cleopatra.domain.common.enums.address.District;
 import com.likelion.cleopatra.domain.common.enums.address.Neighborhood;
 import com.likelion.cleopatra.domain.common.enums.Platform;
+import com.likelion.cleopatra.domain.common.enums.keyword.Primary;
+import com.likelion.cleopatra.domain.common.enums.keyword.Secondary;
 import com.likelion.cleopatra.domain.data.util.UrlKey;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
@@ -64,8 +66,8 @@ public class LinkDoc {
     /** 네이버 블로그 검색 아이템 → LinkDoc (id/url/canonical 포함) */
     public static LinkDoc fromNaver(String url,
                                     String query,
-                                    String categoryPrimary,
-                                    String categorySecondary,
+                                    Primary primary,
+                                    Secondary secondary,
                                     District district,
                                     Neighborhood neighborhood) {
         String canonical = UrlKey.canonicalize(url);
@@ -78,8 +80,8 @@ public class LinkDoc {
                 .canonicalUrl(canonical)
                 .platform(Platform.NAVER_BLOG)
                 .query(query)
-                .categoryPrimary(categoryPrimary)
-                .categorySecondary(categorySecondary)
+                .categoryPrimary(primary != null ? primary.getKo() : null)       // DB에는 한글 저장
+                .categorySecondary(secondary != null ? secondary.getKo() : null) // DB에는 한글 저장
                 .district(district)
                 .neighborhood(neighborhood)
                 .status(LinkStatus.NEW)

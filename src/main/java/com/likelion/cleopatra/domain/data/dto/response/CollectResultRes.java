@@ -1,16 +1,26 @@
 package com.likelion.cleopatra.domain.data.dto.response;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
 @Getter
-@Setter
 @Builder
+@Schema(name = "CollectResultRes", description = "수집 결과 요약")
 public class CollectResultRes {
-    private final int inserted;   // 새로 들어간 문서 수
-    private final String query;   // 실제 사용한 검색어(사후 추적용)
+
+    @Schema(description = "신규 삽입된 링크 수", example = "12")
+    private final int inserted;
+
+    @Schema(description = "실제로 사용된 검색 쿼리", example = "공릉동 카페")
+    private final String query;
+
+    @Schema(description = "적용된 display(최대 100)", example = "50")
     private final Integer display;
+
+    @Schema(description = "적용된 start", example = "1")
     private final Integer start;
-    private final long elapsedMs; // 처리 시간(ms)
+
+    @Schema(description = "처리 시간(ms)", example = "245")
+    private final long elapsedMs;
 }

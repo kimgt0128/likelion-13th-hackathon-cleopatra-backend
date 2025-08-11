@@ -48,3 +48,6 @@ mysql-init/*
 
 ### nginx 설정 파일
 nginx/*
+
+### mongo 쿼리 설정
+src/main/java/com/likelion/cleopatra/global/config/mongoConfig/
