@@ -1,7 +1,9 @@
 package com.likelion.cleopatra.domain.common.enums;
 
 public enum Platform {
-    NAVER,
+    NAVER_BLOG,
+    NAVER_CAFE,
+    NAVER_PLACE,
     KAKAO,
     INSTRAGRAM,
     BAEMIN

@@ -25,25 +25,28 @@ repositories {
 
 dependencies {
 
-    // 기본 설정
+    // Core
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-    // web
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-
-    // jpa
+    // Jpa
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 
     // h2 db: 테스트용
-    runtimeOnly 'com.h2database:h2'
+    testRuntimeOnly 'com.h2database:h2'
 
-    // mysql
+    // Mysql
     runtimeOnly 'com.mysql:mysql-connector-j'
 
-    // webclient
+    // Mongodb
+    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'      // Mongo 동기
+
+    // Webclient
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
     // SpringDoc - Swagger UI
