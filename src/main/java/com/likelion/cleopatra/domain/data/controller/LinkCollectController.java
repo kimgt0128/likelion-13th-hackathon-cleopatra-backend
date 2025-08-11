@@ -1,7 +1,9 @@
 package com.likelion.cleopatra.domain.data.controller;
 
-import com.likelion.cleopatra.domain.data.dto.CollectNaverBlogReq;
+import com.likelion.cleopatra.domain.data.dto.requeset.CollectNaverBlogReq;
+import com.likelion.cleopatra.domain.data.dto.response.CollectResultRes;
 import com.likelion.cleopatra.domain.data.service.LinkCollectorService;
+import com.likelion.cleopatra.global.exception.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,11 +14,12 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class LinkCollectController {
 
-    private final LinkCollectorService service;
+    private final LinkCollectorService linkCollectorService;
 
     @PostMapping("/naver/blog")
-    public Map<String, Object> collectNaverBlog(@RequestBody CollectNaverBlogReq req) {
-        int inserted = service.collectNaverBlogLinks(req);
-        return Map.of("inserted", inserted);
+    public ApiResponse<CollectResultRes> collectNaverBlog(@RequestBody CollectNaverBlogReq req) {
+        CollectResultRes res = linkCollectorService.collectNaverBlogLinks(req);
+        return ApiResponse.success(res);
     }
+
 }

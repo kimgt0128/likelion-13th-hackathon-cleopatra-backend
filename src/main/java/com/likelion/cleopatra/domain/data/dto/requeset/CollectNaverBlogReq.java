@@ -1,4 +1,4 @@
-package com.likelion.cleopatra.domain.data.dto;
+package com.likelion.cleopatra.domain.data.dto.requeset;
 
 import com.likelion.cleopatra.domain.common.enums.address.District;
 import com.likelion.cleopatra.domain.common.enums.address.Neighborhood;

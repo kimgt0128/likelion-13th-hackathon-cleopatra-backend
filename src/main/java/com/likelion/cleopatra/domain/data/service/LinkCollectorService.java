@@ -1,7 +1,8 @@
 package com.likelion.cleopatra.domain.data.service;
 
 import com.likelion.cleopatra.domain.data.document.LinkDoc;
-import com.likelion.cleopatra.domain.data.dto.CollectNaverBlogReq;
+import com.likelion.cleopatra.domain.data.dto.requeset.CollectNaverBlogReq;
+import com.likelion.cleopatra.domain.data.dto.response.CollectResultRes;
 import com.likelion.cleopatra.domain.data.repository.LinksRepository;
 import com.likelion.cleopatra.domain.platform.naver.dto.blog.NaverBlogSearchRes;
 import com.likelion.cleopatra.domain.platform.naver.service.NaverApiService;
@@ -26,37 +27,49 @@ public class LinkCollectorService {
     private final MongoTemplate mongoTemplate;
 
     /**
-     * 네이버 블로그 검색 API를 호출해 링크를 수집/적재합니다.
-     *
-     * @param req 수집 요청 DTO
-     * @return 이번 호출로 새로 삽입된 링크 수(이미 존재한 링크는 카운트하지 않음)
+     * 네이버 블로그 링크 수집/적재.
+     * @param req 수집 요청
+     * @return CollectResultRes (inserted, query, display, start, elapsedMs)
      */
 
-    public int collectNaverBlogLinks(CollectNaverBlogReq req) {
+    public CollectResultRes collectNaverBlogLinks(CollectNaverBlogReq req) {
+        long t0 = System.currentTimeMillis();
+
         int display = Math.min(100, Optional.ofNullable(req.display()).orElse(50));
         int start   = Optional.ofNullable(req.start()).orElse(1);
 
-        // 검색어: "행정동 + 공백 + 2차 카테고리"(String + Enum = String + Enum.toSring() 호출)
-        String query = req.neighborhood().getKo() + " " + req.secondary();
+        // 검색어: "행정동(한글) + 공백 + 2차 카테고리(한글)"
+        String secondary = Optional.ofNullable(req.secondary()).orElse("").trim();
+        String query = req.neighborhood().getKo() + " " + secondary;
 
         NaverBlogSearchRes res = naverApiService.searchBlog(query, display, start).block();
 
-        if (res == null || res.getItems() == null) return 0;
+        int inserted = 0;
+        if (res != null && res.getItems() != null) {
+            inserted = (int) res.getItems().stream()
+                    .map(item -> LinkDoc.fromNaver(
+                            item.getLink(),
+                            query,
+                            req.primary(),      // 한글 그대로 저장 (ex. "요식업")
+                            req.secondary(),    // 한글 그대로 저장 (ex. "치킨")
+                            req.district(),     // Enum (DB에는 코드로)
+                            req.neighborhood()  // Enum (DB에는 코드로)
+                    ))
+                    .filter(this::insertIfAbsent)
+                    .count();
+            log.info("Naver blog collected: query='{}' inserted={}, totalBatch={}",
+                    query, inserted, res.getItems().size());
+        } else {
+            log.info("Naver blog collected: query='{}' inserted=0, totalBatch=0 (empty response)", query);
+        }
 
-        int inserted = (int) res.getItems().stream()
-                .map(item -> LinkDoc.fromNaver(
-                        item.getLink(),
-                        query, req.primary(),
-                        req.secondary(),
-                        req.district(),
-                        req.neighborhood()
-                ))
-                .filter(this::insertIfAbsent)
-                .count();
-        log.info("Naver blog collected: query='{}' inserted={}, totalBatch={}",
-                query, inserted, res.getItems().size());
-
-        return inserted;
+        return CollectResultRes.builder()
+                .inserted(inserted)
+                .query(query)
+                .display(display)
+                .start(start)
+                .elapsedMs(System.currentTimeMillis() - t0)
+                .build();
     }
 
 
