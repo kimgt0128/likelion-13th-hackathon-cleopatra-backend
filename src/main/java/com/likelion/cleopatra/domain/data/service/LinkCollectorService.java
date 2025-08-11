@@ -36,8 +36,8 @@ public class LinkCollectorService {
         int display = Math.min(100, Optional.ofNullable(req.display()).orElse(50));
         int start   = Optional.ofNullable(req.start()).orElse(1);
 
-        // 검색어: "행정동 + 공백 + 2차 카테고리"
-        String query = req.neighborhood() + " " + req.secondary();
+        // 검색어: "행정동 + 공백 + 2차 카테고리"(String + Enum = String + Enum.toSring() 호출)
+        String query = req.neighborhood().getKo() + " " + req.secondary();
 
         NaverBlogSearchRes res = naverApiService.searchBlog(query, display, start).block();
 

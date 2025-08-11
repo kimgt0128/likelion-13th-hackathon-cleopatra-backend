@@ -1,7 +1,7 @@
 package com.likelion.cleopatra.domain.data.document;
 
-import com.likelion.cleopatra.domain.common.enums.addrdss.District;
-import com.likelion.cleopatra.domain.common.enums.addrdss.Neighborhood;
+import com.likelion.cleopatra.domain.common.enums.address.District;
+import com.likelion.cleopatra.domain.common.enums.address.Neighborhood;
 import com.likelion.cleopatra.domain.common.enums.Platform;
 import com.likelion.cleopatra.domain.data.util.UrlKey;
 import lombok.NoArgsConstructor;

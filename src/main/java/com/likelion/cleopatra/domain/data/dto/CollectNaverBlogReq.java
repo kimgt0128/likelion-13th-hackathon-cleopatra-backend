@@ -1,7 +1,7 @@
 package com.likelion.cleopatra.domain.data.dto;
 
-import com.likelion.cleopatra.domain.common.enums.addrdss.District;
-import com.likelion.cleopatra.domain.common.enums.addrdss.Neighborhood;
+import com.likelion.cleopatra.domain.common.enums.address.District;
+import com.likelion.cleopatra.domain.common.enums.address.Neighborhood;
 
 public record CollectNaverBlogReq(
         String primary,
@@ -9,6 +9,5 @@ public record CollectNaverBlogReq(
         District district,
         Neighborhood neighborhood,
         Integer display,   // null이면 기본값 적용
-        Integer start,     // null이면 기본값 적용
-        String query       // null이면 "동 + 카테고리"로 자동 생성
+        Integer start     // null이면 기본값 적용
 ) {}
