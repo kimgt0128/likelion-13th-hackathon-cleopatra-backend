@@ -12,7 +12,7 @@ services:
       timeout: 5s
       retries: 5
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./mysql-init:/docker-entrypoint-initdb.d
@@ -62,7 +62,12 @@ services:
     env_file:
       - .env
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+    restart: on-failure   # 선택(권장): DB 준비되면 자동 재시작
+    # ports, networks 등 기존 그대로
     ports:
       - "8080:8080"
     networks:
