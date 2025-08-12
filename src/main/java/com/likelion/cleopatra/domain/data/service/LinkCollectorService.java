@@ -69,7 +69,7 @@ public class LinkCollectorService {
                     query, inserted, res.getItems().size());
         } else {
             log.info("Naver blog collected: query='{}' inserted=0, totalBatch=0 (empty response)", query);
-            throw new PlatformException((PlatformErrorCode.NO_BLOG_LINK_FOUND);
+            throw new PlatformException((PlatformErrorCode.NO_BLOG_LINK_FOUND));
 
         }
 
