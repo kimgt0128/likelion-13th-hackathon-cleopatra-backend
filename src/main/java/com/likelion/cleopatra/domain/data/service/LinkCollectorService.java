@@ -3,9 +3,9 @@ package com.likelion.cleopatra.domain.data.service;
 import com.likelion.cleopatra.domain.data.document.LinkDoc;
 import com.likelion.cleopatra.domain.data.dto.requeset.CollectNaverBlogReq;
 import com.likelion.cleopatra.domain.data.dto.response.CollectResultRes;
+import com.likelion.cleopatra.domain.data.exception.LinkCollectErrorCode;
+import com.likelion.cleopatra.domain.data.exception.LinkCollectException;
 import com.likelion.cleopatra.domain.data.repository.LinksRepository;
-import com.likelion.cleopatra.domain.platform.exception.PlatformErrorCode;
-import com.likelion.cleopatra.domain.platform.exception.PlatformException;
 import com.likelion.cleopatra.domain.platform.naver.dto.blog.NaverBlogSearchRes;
 import com.likelion.cleopatra.domain.platform.naver.service.NaverApiService;
 import com.mongodb.client.result.UpdateResult;
@@ -37,15 +37,15 @@ public class LinkCollectorService {
     public CollectResultRes collectNaverBlogLinks(CollectNaverBlogReq req) {
         long t0 = System.currentTimeMillis();
 
-        if (req.display() < 10 || req.display() > 100) throw new PlatformException(PlatformErrorCode.INVALID_DISPLAY_RANGE);
-        if (req.start() < 1 || req.start() > 1000) throw new PlatformException(PlatformErrorCode.INVALID_DISPLAY_RANGE);
+        if (req.display() < 10 || req.display() > 100) throw new LinkCollectException(LinkCollectErrorCode.INVALID_DISPLAY_RANGE);
+        if (req.start() < 1 || req.start() > 1000) throw new LinkCollectException(LinkCollectErrorCode.INVALID_START_RANGE);
 
         int display = Math.min(100, Optional.ofNullable(req.display()).orElse(50));
         int start   = Optional.ofNullable(req.start()).orElse(1);
 
         // 쿼리 구성 검증(이론상 @Valid로 보장되지만 수비적으로)
         if (req.neighborhood() == null || req.secondary() == null) {
-            throw new PlatformException(PlatformErrorCode.REQUEST_VALIDATION_FAILED);
+            throw new LinkCollectException(LinkCollectErrorCode.REQUEST_VALIDATION_FAILED);
         }
         // 검색어: "행정동(한글) + 공백 + 2차 카테고리(한글)"
         String query = req.neighborhood().getKo() + " " + req.secondary().getKo();
@@ -69,7 +69,7 @@ public class LinkCollectorService {
                     query, inserted, res.getItems().size());
         } else {
             log.info("Naver blog collected: query='{}' inserted=0, totalBatch=0 (empty response)", query);
-            throw new PlatformException((PlatformErrorCode.NO_BLOG_LINK_FOUND));
+            throw new LinkCollectException(LinkCollectErrorCode.NO_BLOG_LINK_FOUND);
 
         }
 
