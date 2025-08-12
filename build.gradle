@@ -1,7 +1,7 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.5.4'
-    id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.springframework.boot' version '3.3.5'
+    id 'io.spring.dependency-management' version '1.1.6'
 }
 
 group = 'com.likelion'
@@ -25,26 +25,35 @@ repositories {
 
 dependencies {
 
-    // 기본 설정
+    // Core
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-    // web
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-
-    // jpa
+    // Jpa
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 
     // h2 db: 테스트용
-    runtimeOnly 'com.h2database:h2'
+    testRuntimeOnly 'com.h2database:h2'
 
-    // Postgresql
+    // Mysql
     runtimeOnly 'com.mysql:mysql-connector-j'
+
+    // Mongodb
+    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'      // Mongo 동기
+
+    // Webclient
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
     // SpringDoc - Swagger UI
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
+
+    // Validatoin
+    implementation "org.springframework.boot:spring-boot-starter-validation"
 
 }
 
