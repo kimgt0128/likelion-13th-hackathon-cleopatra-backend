@@ -37,11 +37,13 @@ public class LinkCollectorService {
     public CollectResultRes collectNaverBlogLinks(CollectNaverBlogReq req) {
         long t0 = System.currentTimeMillis();
 
-        if (req.display() < 10 || req.display() > 100) throw new LinkCollectException(LinkCollectErrorCode.INVALID_DISPLAY_RANGE);
-        if (req.start() < 1 || req.start() > 1000) throw new LinkCollectException(LinkCollectErrorCode.INVALID_START_RANGE);
+        int display = Math.min(100, req.displayOrDefault()); // ← NPE 방지
+        int start   = req.startOrDefault();  // ← NPE 방지
 
-        int display = Math.min(100, Optional.ofNullable(req.display()).orElse(50));
-        int start   = Optional.ofNullable(req.start()).orElse(1);
+        if (display < 10 || display > 100) throw new LinkCollectException(LinkCollectErrorCode.INVALID_DISPLAY_RANGE);
+        if (start < 1 || start > 1000) throw new LinkCollectException(LinkCollectErrorCode.INVALID_START_RANGE);
+
+
 
         // 쿼리 구성 검증(이론상 @Valid로 보장되지만 수비적으로)
         if (req.neighborhood() == null || req.secondary() == null) {

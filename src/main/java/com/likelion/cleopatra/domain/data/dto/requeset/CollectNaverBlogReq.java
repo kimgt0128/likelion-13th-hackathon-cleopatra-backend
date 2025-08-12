@@ -38,4 +38,7 @@ public record CollectNaverBlogReq(
         @Max(value = 1000, message = "start는 1000 이하")
         @Schema(description = "검색 시작 위치(1부터)", example = "1")
         Integer start
-) {}
+) {
+    public int displayOrDefault() { return display == null ? 50 : Math.min(100, display); }
+    public int startOrDefault()   { return start   == null ? 1  : start; }
+}
