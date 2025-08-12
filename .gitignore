@@ -46,5 +46,9 @@ src/main/resources/application-dev.yml
 ### mysql-init 파일
 mysql-init/*
 
+### Monog-init 파일
+mongo-init/*
+
 ### nginx 설정 파일
-nginx/*
+nginx/nginx.conf
+src/main/java/com/likelion/cleopatra/global/config/mongoConfig/

@@ -5,7 +5,6 @@ spring:
     password: ${MYSQL_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
-
   jpa:
     hibernate:
       ddl-auto: none
@@ -15,8 +14,15 @@ spring:
         format_sql: false
         highlight_sql: false
 
+  data:
+    mongodb:
+      uri: mongodb://${MONGO_APP_USERNAME}:${MONGO_APP_PASSWORD}@mongo:27017/${MONGO_DB}?authSource=admin
+      auto-index-creation: false
+
 logging:
   level:
     org.hibernate.SQL: error
     org.hibernate.type.descriptor.sql: error
     root: info
+    org.springframework.data.mongodb.core.MongoTemplate: INFO
+    org.mongodb.driver: WARN
