@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -44,7 +45,7 @@ public class LinkCollectController {
                         """
                     )
             )
-    )@RequestBody CollectNaverBlogReq req) {
+    )@Valid @RequestBody CollectNaverBlogReq req) {
         CollectResultRes res = linkCollectorService.collectNaverBlogLinks(req);
         return ApiResponse.success(res);
     }
