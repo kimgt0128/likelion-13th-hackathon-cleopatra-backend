@@ -34,8 +34,8 @@ public class LinkCollectController {
                             examples = @ExampleObject(name = "예시",
                                     value = """
                         {
-                          "primary": "요식업",
-                          "secondary": "치킨",
+                          "primary": "외식업",
+                          "secondary": "카페",
                           "district": "노원구",
                           "neighborhood": "공릉동",
                           "display": (default 50),
