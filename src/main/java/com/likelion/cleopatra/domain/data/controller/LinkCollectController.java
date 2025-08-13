@@ -13,7 +13,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "Collect", description = "description = 외부 플랫폼 링크 수집 API")
+@Tag(name = "Collect", description = "외부 플랫폼 링크 수집 API")
 @RestController
 @RequestMapping("/api/collect")
 @RequiredArgsConstructor
