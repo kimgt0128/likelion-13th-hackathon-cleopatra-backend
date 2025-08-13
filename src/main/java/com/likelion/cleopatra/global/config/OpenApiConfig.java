@@ -27,7 +27,7 @@ public class OpenApiConfig {
     public GroupedOpenApi collectApi() {
         return GroupedOpenApi.builder()
                 .group("collect")
-                .packagesToScan("com.likelion.cleopatra.domain.data.controller")
+                .packagesToScan("com.likelion.cleopatra.domain.collect.controller")
                 .pathsToMatch("/api/collect/**")
                 .build();
     }
