@@ -32,10 +32,10 @@ dependencies {
 
     // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testRuntimeOnly 'org.junit.openApi:junit-openApi-launcher'
 
     // Jpa
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-collect-jpa'
 
     // h2 db: 테스트용
     testRuntimeOnly 'com.h2database:h2'
@@ -44,7 +44,7 @@ dependencies {
     runtimeOnly 'com.mysql:mysql-connector-j'
 
     // Mongodb
-    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'      // Mongo 동기
+    implementation 'org.springframework.boot:spring-boot-starter-collect-mongodb'      // Mongo 동기
 
     // Webclient
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
