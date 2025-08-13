@@ -1,0 +1,12 @@
+crawler:
+  retry:
+    max-attempts: 3
+    delay-ms: 1000
+  wait:
+    default-time-ms: 2000
+  targets:
+    - site: nate_news
+      url: https://news.nate.com
+
+  schedule:
+    interval: 100000000000  # 10초
