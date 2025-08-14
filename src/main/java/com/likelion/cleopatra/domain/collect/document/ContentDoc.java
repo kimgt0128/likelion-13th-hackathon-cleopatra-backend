@@ -1,6 +1,6 @@
 package com.likelion.cleopatra.domain.collect.document;
 
-import com.likelion.cleopatra.domain.crwal.dto.NaverBlogCrawlRes;
+import com.likelion.cleopatra.domain.crwal.dto.NaverBlogContentRes;
 import com.likelion.cleopatra.global.common.enums.Platform;
 import lombok.*;
 import org.springframework.data.annotation.Id;
@@ -22,7 +22,7 @@ public class ContentDoc {
     private String contentText;
     private Instant crawledAt;
 
-    public static ContentDoc from(LinkDoc link, NaverBlogCrawlRes r) {
+    public static ContentDoc from(LinkDoc link, NaverBlogContentRes r) {
         return ContentDoc.builder()
                 .id(link.getId())
                 .platform(link.getPlatform())

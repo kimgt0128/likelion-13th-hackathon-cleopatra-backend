@@ -5,6 +5,7 @@ import com.likelion.cleopatra.domain.collect.document.LinkDoc;
 import com.likelion.cleopatra.domain.collect.document.LinkStatus;
 import com.likelion.cleopatra.domain.collect.repository.ContentRepository;
 import com.likelion.cleopatra.domain.collect.repository.LinkDocRepository;
+import com.likelion.cleopatra.domain.crwal.dto.CrawlRes;
 import com.likelion.cleopatra.domain.crwal.impl.NaverBlogCrawler;
 import com.likelion.cleopatra.global.common.enums.Platform;
 import lombok.RequiredArgsConstructor;
@@ -37,26 +38,30 @@ public class NaverCrawlService {
      */
 
     // @Scheduled(fixedDelay = 60_000)
-    public void naverBlogCrawl() {
+    public CrawlRes naverBlogCrawl(int size) {
         var sort = Sort.by(Sort.Order.desc("priority"), Sort.Order.asc("updatedAt"));
-        var page = PageRequest.of(0, 50, sort);
+        var page = PageRequest.of(0, size, sort);
 
         var batch = linkDocRepository.findByPlatformAndStatus(Platform.NAVER_BLOG, LinkStatus.NEW, page).getContent();
         if (batch.isEmpty()) {
             log.info("CRAWL skip platform=NAVER_BLOG reason=empty-batch");
-            return;
+            return new CrawlRes(0, 0, 0);
         }
 
-        // FETCHING 마킹
+        // FETCHING 마 킹
         var now = Instant.now();
         batch.forEach(d -> d.markFetching(now));
         linkDocRepository.saveAll(batch);
 
         // 최소 구현: 순차 처리(해커톤용). 필요하면 exec.submit(processOneSafe)로 교체.
-        for (var doc : batch) processOneSafe(doc);
+        int success = 0, fail = 0;
+        for (var doc : batch) {
+            if(processOneSafe(doc)) success++; else fail++;
+        }
+        return new CrawlRes(batch.size(), success, fail);
     }
 
-    private void processOneSafe(LinkDoc doc) {
+    private boolean processOneSafe(LinkDoc doc) {
         final String url = doc.getUrl();
         try {
             var res = naverBlogCrawler.crawl(url);                 // 실패 시 예외
@@ -70,6 +75,7 @@ public class NaverCrawlService {
             log.info("CRAWL ok platform=NAVER_BLOG url={} textLen={}", url, len(res.getText()));
             log.debug("CRAWL detail url={} title='{}' htmlLen={} textLen={} sample=\"{}\"",
                     url, compact(res.getTitle()), len(res.getHtml()), len(res.getText()), sample(res.getText(), 160));
+            return true;
 
         } catch (Exception e) {
 
@@ -79,6 +85,7 @@ public class NaverCrawlService {
 
             log.info("CRAWL fail platform=NAVER_BLOG url={} reason={}", url, e.getClass().getSimpleName());
             log.debug("CRAWL fail detail url={} msg={}", url, e.getMessage());
+            return false;
         }
     }
 

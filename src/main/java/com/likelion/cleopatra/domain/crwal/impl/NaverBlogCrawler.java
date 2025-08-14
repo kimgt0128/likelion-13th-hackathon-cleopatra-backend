@@ -1,6 +1,6 @@
 package com.likelion.cleopatra.domain.crwal.impl;
 
-import com.likelion.cleopatra.domain.crwal.dto.NaverBlogCrawlRes;
+import com.likelion.cleopatra.domain.crwal.dto.NaverBlogContentRes;
 import com.likelion.cleopatra.domain.crwal.selector.NaverSelectors;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Locator;
@@ -19,7 +19,7 @@ public class NaverBlogCrawler {
 
     private final BrowserContext context;
 
-    public NaverBlogCrawlRes crawl(String originalUrl) {
+    public NaverBlogContentRes crawl(String originalUrl) {
         final String url = toMobileUrl(originalUrl);
         final Page page = context.newPage();
         try {
@@ -64,7 +64,7 @@ public class NaverBlogCrawler {
             log.debug("NAVER_BLOG result url={} title='{}' htmlLen={} textLen={} sample=\"{}\"",
                     url, compact(title), html.length(), text.length(), sample(text, 160));
 
-            return new NaverBlogCrawlRes(title, html, text);
+            return new NaverBlogContentRes(title, html, text);
         } finally {
             page.close(); // 자원 정리, 예외는 위로 전파
         }

@@ -13,7 +13,7 @@ import lombok.ToString;
 @Getter
 @AllArgsConstructor
 @ToString
-public class NaverBlogCrawlRes {
+public class NaverBlogContentRes {
 
     /** 블로그 글 제목 */
     private final String title;
