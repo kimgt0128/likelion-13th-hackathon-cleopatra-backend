@@ -28,9 +28,9 @@ public class ContentDoc {
                 .platform(link.getPlatform())
                 .url(link.getUrl())
                 .canonicalUrl(link.getCanonicalUrl())
-                .title(r.title())
-                .contentHtml(r.html())
-                .contentText(r.text())
+                .title(r.getTitle())
+                .contentHtml(r.getHtml())
+                .contentText(r.getText())
                 .crawledAt(Instant.now())
                 .build();
     }
