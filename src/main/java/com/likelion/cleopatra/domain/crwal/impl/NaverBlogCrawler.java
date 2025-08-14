@@ -7,100 +7,123 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.WaitUntilState;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
-/**
- * 네이버는 PC 페이지가 iframe으로 본문을 넣는 경우가 있어 모바일 URL로 변환해 파싱한다.
- * 도커에서 실행 시 Playwright 런타임 라이브러리(폰트, libnss 등)가 필요할 수 있다. 초기엔 로컬에서 검증 후 컨테이너 의존성 추가.
- * 크롤링 속도 조절이 필요하면 page.waitForTimeout()을 소폭 삽입하거나 배치 크기를 줄인다.
- */
 @RequiredArgsConstructor
 @Component
+@Slf4j
 public class NaverBlogCrawler {
 
     private final BrowserContext context;
 
-
     public NaverBlogCrawlRes crawl(String originalUrl) {
-        String url = toMobileUrl(originalUrl);
+        final String url = toMobileUrl(originalUrl);
+        final Page page = context.newPage();
+        try {
+            // 리소스 최소 차단: media만
+            page.route("**/*", r -> {
+                String t = r.request().resourceType();
+                if ("media".equals(t)) r.abort(); else r.resume();
+            });
 
-        Page page = context.newPage(); // crawl exception 생성 후 예외 처리 로직 추가
+            // 랜덤 뷰포트 + 짧은 지터
+            page.setViewportSize(360 + rnd(0, 80), 740 + rnd(0, 180));
+            page.navigate(url, new Page.NavigateOptions().setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+            page.waitForTimeout(rnd(250, 900));
 
-        page.navigate(url, new Page.NavigateOptions().setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+            // 선택적 확장 클릭(실패 시 예외 전파)
+            clickIfPresent(page, "button:has-text('닫기'), .btn_close, .u_skip", 1200);
+            clickIfPresent(page, "button:has-text('더보기')", 1200);
+            clickIfPresent(page, ".se-more-button, .se-more-text", 1200);
+            clickIfPresent(page, "a:has-text('원문보기')", 1500);
 
-        // 간헐적 팝업 제거
-        page.locator("button:has-text('닫기'), .btn_close, .u_skip").first().click(new Locator.ClickOptions().setTrial(true).setTimeout(1000));//.catchException(_e -> {});
+            // 본문 컨테이너 필수 확보(orElseThrow 패턴)
+            Locator body = requireBody(page);
 
-        // 본문 대기
-        Locator se = page.locator(NaverSelectors.SE_MAIN);
-        Locator legacy = page.locator(NaverSelectors.LEGACY_BODY);
+            String title = extractTitle(page)
+                    .trim();
+            String html = body.innerHTML();
+            String text = body.innerText().trim();
 
-        // 스크롤 유도 후 재시도
-        if (se.count() == 0 && legacy.count() == 0) {
-            // 스크롤 유도 후 재시도
-            page.mouse().wheel(0, 2000);
-            page.waitForTimeout(800);
+            // 너무 짧으면 경량 스크롤 1회 후 재추출
+            if (text.length() < 50) {
+                autoScrollLight(page);
+                html = body.innerHTML();
+                text = body.innerText().trim();
+            }
+
+            if (html.isBlank())
+                throw new IllegalStateException("본문 선택자 미일치");
+
+            // 배포 최소 로그
+            log.info("NAVER_BLOG crawled url={} textLen={}", url, text.length());
+            // 개발 상세 로그
+            log.debug("NAVER_BLOG result url={} title='{}' htmlLen={} textLen={} sample=\"{}\"",
+                    url, compact(title), html.length(), text.length(), sample(text, 160));
+
+            return new NaverBlogCrawlRes(title, html, text);
+        } finally {
+            page.close(); // 자원 정리, 예외는 위로 전파
         }
-
-        String title = extractTitle(page);
-        String html = extractHtml(page);
-        String text = extractTextFromHtml(page, html);
-        if (html == null || html.isBlank()) {
-            throw new IllegalStateException("본문 선택자 미일치");
-        }
-        return new NaverBlogCrawlRes(title, html, text);
     }
 
+    // --- helpers ---
 
+    private Locator requireBody(Page page) {
+        Locator se = page.locator(NaverSelectors.SE_MAIN);
+        if (se.count() > 0) return se.first();
+        Locator legacy = page.locator(NaverSelectors.LEGACY_BODY);
+        if (legacy.count() > 0) return legacy.first();
+        // 마지막 짧은 대기 후 재확인
+        page.waitForTimeout(300);
+        if (se.count() > 0) return se.first();
+        if (legacy.count() > 0) return legacy.first();
+        throw new IllegalStateException("본문 컨테이너 없음");
+    }
 
+    private void clickIfPresent(Page p, String sel, int timeoutMs) {
+        Locator l = p.locator(sel).first();
+        if (l.count() > 0) l.click(new Locator.ClickOptions().setTimeout(timeoutMs));
+    }
 
-    private String toMobileUrl(String url) {
-        return url.replace("://blog.naver.com/", "://m.blog.naver.com/");
+    private void autoScrollLight(Page page) {
+        page.evaluate("() => new Promise(res => {"
+                + "let y=0, step=500, max=Math.min(2500, document.body.scrollHeight);"
+                + "let id=setInterval(()=>{window.scrollBy(0,step); y+=step; if(y>=max){clearInterval(id);res(0)}},250);})");
+        page.waitForTimeout(rnd(200, 500));
     }
 
     private String extractTitle(Page page) {
-        // 여러 후보 중 우선 매칭
         for (String sel : NaverSelectors.TITLE.split(",")) {
             Locator l = page.locator(sel.trim());
             if (l.count() > 0) {
-                String t = l.first().innerText().trim();
-                if (!t.isBlank()) return t;
+                if (sel.contains("meta")) {
+                    String v = l.first().getAttribute("content");
+                    if (v != null && !v.isBlank()) return v;
+                } else {
+                    String t = l.first().innerText();
+                    if (t != null && !t.isBlank()) return t;
+                }
             }
         }
         return page.title();
     }
 
-    private String extractHtml(Page page) {
-        Locator se = page.locator(NaverSelectors.SE_MAIN);
-        if (se.count() > 0) return se.first().innerHTML();
-
-        Locator legacy = page.locator(NaverSelectors.LEGACY_BODY);
-        if (legacy.count() > 0) return legacy.first().innerHTML();
-
-        // 최후 수단: og:description만
-        Locator og = page.locator("meta[property='og:description']");
-        if (og.count() > 0) return "<p>" + og.first().getAttribute("content") + "</p>";
-        return null;
+    private static int rnd(int a, int b) {
+        return ThreadLocalRandom.current().nextInt(a, b + 1);
     }
-
-    private String extractTextFromHtml(Page page, String html) {
-        // 페이지에서 DOM API로 텍스트만 추출
-        // se-text 블록 우선
-        Locator blocks = page.locator(NaverSelectors.SE_TEXT_BLOCKS);
-        if (blocks.count() > 0) {
-            List<String> lines = blocks.allInnerTexts();
-            return String.join("\n\n", lines).trim();
-        }
-        // 그 외는 전체 컨테이너의 innerText
-        Locator se = page.locator(NaverSelectors.SE_MAIN);
-        if (se.count() > 0) return se.first().innerText().trim();
-
-        Locator legacy = page.locator(NaverSelectors.LEGACY_BODY);
-        if (legacy.count() > 0) return legacy.first().innerText().trim();
-
-        return "";
+    private static String sample(String s, int n) {
+        if (s == null) return "";
+        String one = s.replaceAll("\\s+", " ").trim();
+        return one.substring(0, Math.min(one.length(), n));
     }
-
+    private static String compact(String s) {
+        return s == null ? "" : s.replaceAll("\\s+", " ").trim();
+    }
+    private String toMobileUrl(String url) {
+        return url.replace("://blog.naver.com/", "://m.blog.naver.com/");
+    }
 }
