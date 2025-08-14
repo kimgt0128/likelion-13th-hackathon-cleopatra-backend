@@ -9,9 +9,12 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 
-@Getter @Builder @NoArgsConstructor @AllArgsConstructor
-@Document(collection = "contents")
+@Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @CompoundIndex(name="plat_time_idx", def="{ 'platform':1, 'crawledAt':-1 }")
+@Document(collection = "contents")
 public class ContentDoc {
     @Id private String id;              // LinkDoc.id와 동일(1:1)
     private Platform platform;

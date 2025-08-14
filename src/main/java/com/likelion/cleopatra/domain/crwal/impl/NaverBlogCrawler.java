@@ -2,9 +2,8 @@ package com.likelion.cleopatra.domain.crwal.impl;
 
 import com.likelion.cleopatra.domain.crwal.dto.NaverBlogContentRes;
 import com.likelion.cleopatra.domain.crwal.selector.NaverSelectors;
-import com.microsoft.playwright.BrowserContext;
-import com.microsoft.playwright.Locator;
-import com.microsoft.playwright.Page;
+import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.LoadState;
 import com.microsoft.playwright.options.WaitUntilState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +22,11 @@ public class NaverBlogCrawler {
         final String url = toMobileUrl(originalUrl);
         final Page page = context.newPage();
         try {
+
+            // [ADD] 기본 타임아웃 현실화 (팝업/렌더 지연에 대비)
+            page.setDefaultTimeout(10_000);
+            page.setDefaultNavigationTimeout(15_000);
+
             // 리소스 최소 차단: media만
             page.route("**/*", r -> {
                 String t = r.request().resourceType();
@@ -32,19 +36,19 @@ public class NaverBlogCrawler {
             // 랜덤 뷰포트 + 짧은 지터
             page.setViewportSize(360 + rnd(0, 80), 740 + rnd(0, 180));
             page.navigate(url, new Page.NavigateOptions().setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+            page.waitForLoadState(LoadState.NETWORKIDLE); // [ADD] 네트워크 안정화까지 대기
             page.waitForTimeout(rnd(250, 900));
 
-            // 선택적 확장 클릭(실패 시 예외 전파)
+            // [CHG] 선택적 클릭을 “best-effort”로. 실패해도 전파하지 않음
             clickIfPresent(page, "button:has-text('닫기'), .btn_close, .u_skip", 1200);
             clickIfPresent(page, "button:has-text('더보기')", 1200);
             clickIfPresent(page, ".se-more-button, .se-more-text", 1200);
             clickIfPresent(page, "a:has-text('원문보기')", 1500);
 
-            // 본문 컨테이너 필수 확보(orElseThrow 패턴)
+            // [CHG] 본문 컨테이너 필수 확보: 모바일 우선 → 레거시 → iframe(mainFrame) 순
             Locator body = requireBody(page);
 
-            String title = extractTitle(page)
-                    .trim();
+            String title = extractTitle(page).trim();
             String html = body.innerHTML();
             String text = body.innerText().trim();
 
@@ -73,20 +77,55 @@ public class NaverBlogCrawler {
     // --- helpers ---
 
     private Locator requireBody(Page page) {
+        // 1) 모바일 신형
         Locator se = page.locator(NaverSelectors.SE_MAIN);
         if (se.count() > 0) return se.first();
+
+        // 2) 모바일/데스크톱 레거시
         Locator legacy = page.locator(NaverSelectors.LEGACY_BODY);
         if (legacy.count() > 0) return legacy.first();
+
+        // 3) [ADD] 데스크톱 구형 iframe(mainFrame) 대응
+        Frame main = null;
+        for (Frame f : page.frames()) {
+            if ("mainFrame".equals(f.name())) { main = f; break; }
+        }
+        if (main != null) {
+            Locator fSe = main.locator(NaverSelectors.SE_MAIN);
+            if (fSe.count() > 0) return fSe.first();
+            Locator fLegacy = main.locator(NaverSelectors.LEGACY_BODY);
+            if (fLegacy.count() > 0) return fLegacy.first();
+        }
+
         // 마지막 짧은 대기 후 재확인
         page.waitForTimeout(300);
         if (se.count() > 0) return se.first();
         if (legacy.count() > 0) return legacy.first();
+        if (main != null) {
+            Locator fSe = main.locator(NaverSelectors.SE_MAIN);
+            if (fSe.count() > 0) return fSe.first();
+            Locator fLegacy = main.locator(NaverSelectors.LEGACY_BODY);
+            if (fLegacy.count() > 0) return fLegacy.first();
+        }
+
         throw new IllegalStateException("본문 컨테이너 없음");
     }
 
+    // [CHG] 클릭 실패는 무시(TimeoutError/PlaywrightException), 보이는 경우만 클릭
     private void clickIfPresent(Page p, String sel, int timeoutMs) {
-        Locator l = p.locator(sel).first();
-        if (l.count() > 0) l.click(new Locator.ClickOptions().setTimeout(timeoutMs));
+        Locator list = p.locator(sel);
+        if (list.count() == 0) return;
+        Locator first = list.first();
+        try {
+            if (first.isVisible()) {
+                first.click(new Locator.ClickOptions().setTimeout(timeoutMs));
+                p.waitForTimeout(150); // [ADD] 클릭 후 안정화
+            } else {
+                log.debug("click skip sel={} reason=not-visible", sel); // [ADD]
+            }
+        } catch (PlaywrightException e) {
+            log.debug("click ignore sel={} msg={}", sel, compact(e.getMessage())); // [ADD]
+        }
     }
 
     private void autoScrollLight(Page page) {

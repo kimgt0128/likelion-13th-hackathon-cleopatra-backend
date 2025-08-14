@@ -95,7 +95,7 @@ public class LinkCollectorService {
                 .setOnInsert("_id", doc.getId())
                 .setOnInsert("url", doc.getUrl())
                 .setOnInsert("canonicalUrl", doc.getCanonicalUrl())
-                .setOnInsert("openApi", doc.getPlatform())
+                .setOnInsert("platform", doc.getPlatform())
                 .setOnInsert("query", doc.getQuery())
                 .setOnInsert("categoryPrimary", doc.getCategoryPrimary())
                 .setOnInsert("categorySecondary", doc.getCategorySecondary())
