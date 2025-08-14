@@ -6,6 +6,9 @@ import com.likelion.cleopatra.domain.collect.document.LinkStatus;
 import com.likelion.cleopatra.domain.collect.repository.ContentRepository;
 import com.likelion.cleopatra.domain.collect.repository.LinkDocRepository;
 import com.likelion.cleopatra.domain.crwal.dto.CrawlRes;
+import com.likelion.cleopatra.domain.crwal.exception.CrawlErrorCode;
+import com.likelion.cleopatra.domain.crwal.exception.CrawlException;
+import com.likelion.cleopatra.domain.crwal.exception.failure.FailureClassifier;
 import com.likelion.cleopatra.domain.crwal.impl.NaverBlogCrawler;
 import com.likelion.cleopatra.global.common.enums.Platform;
 import lombok.RequiredArgsConstructor;
@@ -26,10 +29,11 @@ public class NaverCrawlService {
     private final LinkDocRepository linkDocRepository;
     private final ContentRepository contentRepository;
     private final NaverBlogCrawler naverBlogCrawler;
+    private final FailureClassifier failureClassifier;
     // 필요 시 동시 처리: @Qualifier("crawlerExecutor") ThreadPoolTaskExecutor exec; 현재 순차로 충분
 
     /**
-     * 실무 메모
+     * CrawlRes
      * - 정렬/제한은 DB가 수행. 애플리케이션 메모리 정렬 없음.
      * - sort 키와 인덱스(plat_stat_pri_upd) 일치가 핵심.
      * - 배치 크기(50)는 네트워크/CPU 절충값. QPS에 맞춰 조정.
@@ -45,15 +49,15 @@ public class NaverCrawlService {
         var batch = linkDocRepository.findByPlatformAndStatus(Platform.NAVER_BLOG, LinkStatus.NEW, page).getContent();
         if (batch.isEmpty()) {
             log.info("CRAWL skip platform=NAVER_BLOG reason=empty-batch");
-            return new CrawlRes(0, 0, 0);
+            throw new CrawlException(CrawlErrorCode.NO_LINKS_TO_CRAWL);
         }
 
-        // FETCHING 마 킹
+        // FETCHING 마킹
         var now = Instant.now();
         batch.forEach(d -> d.markFetching(now));
         linkDocRepository.saveAll(batch);
 
-        // 최소 구현: 순차 처리(해커톤용). 필요하면 exec.submit(processOneSafe)로 교체.
+        // 최소 구현: 순차 처리(해커톤용). 이후 필요시 exec.submit(processOneSafe)로 교체.
         int success = 0, fail = 0;
         for (var doc : batch) {
             if(processOneSafe(doc)) success++; else fail++;
@@ -80,7 +84,8 @@ public class NaverCrawlService {
         } catch (Exception e) {
 
             // 실패시 처리
-            doc.markFailed(Instant.now(), e.getClass().getSimpleName() + ":" + e.getMessage());
+            var err = failureClassifier.classify(e);
+            doc.markFailed(Instant.now(), err.message());   // DB엔 메시지만 저장
             linkDocRepository.save(doc);
 
             log.info("CRAWL fail platform=NAVER_BLOG url={} reason={}", url, e.getClass().getSimpleName());

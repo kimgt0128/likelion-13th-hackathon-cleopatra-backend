@@ -11,6 +11,7 @@ public enum CrawlErrorCode implements ErrorCode {
     /* 입력/사전 검증 */
     INVALID_URL(400, "잘못된 URL"),
     UNSUPPORTED_PLATFORM(400, "지원하지 않는 플랫폼"),
+    NO_LINKS_TO_CRAWL(404, "크롤링할 링크 없음"),
 
     /* 네트워크/탐색 */
     NAVIGATION_TIMEOUT(504, "페이지 로딩 제한시간 초과"),
