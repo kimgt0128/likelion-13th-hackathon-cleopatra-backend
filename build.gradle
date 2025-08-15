@@ -32,7 +32,7 @@ dependencies {
 
     // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testRuntimeOnly 'org.junit.openApi:junit-openApi-launcher'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     // Jpa
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -55,6 +55,8 @@ dependencies {
     // Validatoin
     implementation "org.springframework.boot:spring-boot-starter-validation"
 
+    // Crawling
+    implementation "com.microsoft.playwright:playwright:1.46.0"
 }
 
 tasks.named('test') {

@@ -45,7 +45,8 @@ public class LinkCollectController {
                         """
                     )
             )
-    )@Valid @RequestBody CollectNaverBlogReq req) {
+    )@Valid @RequestBody CollectNaverBlogReq req)
+    {
         CollectResultRes res = linkCollectorService.collectNaverBlogLinks(req);
         return ApiResponse.success(res);
     }

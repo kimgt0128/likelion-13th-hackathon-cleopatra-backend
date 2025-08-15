@@ -5,7 +5,7 @@ import com.likelion.cleopatra.domain.collect.dto.requeset.CollectNaverBlogReq;
 import com.likelion.cleopatra.domain.collect.dto.response.CollectResultRes;
 import com.likelion.cleopatra.domain.collect.exception.LinkCollectErrorCode;
 import com.likelion.cleopatra.domain.collect.exception.LinkCollectException;
-import com.likelion.cleopatra.domain.collect.repository.LinksRepository;
+import com.likelion.cleopatra.domain.collect.repository.LinkDocRepository;
 import com.likelion.cleopatra.domain.openApi.naver.dto.blog.NaverBlogSearchRes;
 import com.likelion.cleopatra.domain.openApi.naver.service.NaverApiService;
 import com.mongodb.client.result.UpdateResult;
@@ -23,7 +23,7 @@ import org.springframework.stereotype.Service;
 public class LinkCollectorService {
 
     private final NaverApiService naverApiService;
-    private final LinksRepository linksRepository;
+    private final LinkDocRepository linkDocRepository;
     private final MongoTemplate mongoTemplate;
 
     /**
@@ -95,7 +95,7 @@ public class LinkCollectorService {
                 .setOnInsert("_id", doc.getId())
                 .setOnInsert("url", doc.getUrl())
                 .setOnInsert("canonicalUrl", doc.getCanonicalUrl())
-                .setOnInsert("openApi", doc.getPlatform())
+                .setOnInsert("platform", doc.getPlatform())
                 .setOnInsert("query", doc.getQuery())
                 .setOnInsert("categoryPrimary", doc.getCategoryPrimary())
                 .setOnInsert("categorySecondary", doc.getCategorySecondary())
