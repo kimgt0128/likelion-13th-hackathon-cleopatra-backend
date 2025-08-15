@@ -27,3 +27,9 @@ logging:
     root: info
     org.springframework.data.mongodb.core.MongoTemplate: INFO
     org.mongodb.driver: WARN
+
+springdoc:
+  packages-to-scan: com.likelion.cleopatra
+  paths-to-match: /api/**
+  default-consumes-media-type: application/json;charset=UTF-8
+  default-produces-media-type: application/json;charset=UTF-8
