@@ -17,9 +17,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 )
 public enum Platform {
     NAVER_BLOG,
-    NAVER_CAFE,
     NAVER_PLACE,
     KAKAO,
-    INSTRAGRAM,
+    INSTAGRAM,
     BAEMIN
 }

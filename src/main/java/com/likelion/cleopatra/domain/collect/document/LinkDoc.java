@@ -140,20 +140,21 @@ public class LinkDoc {
     public static LinkDoc fromNaver(
             String url,
             String query,
+            Platform platform,
             Primary primary,
             Secondary secondary,
             District district,
             Neighborhood neighborhood
     ) {
         String canonical = UrlKey.canonicalize(url);
-        String id = UrlKey.idOf(Platform.NAVER_BLOG, canonical);
+        String id = UrlKey.idOf(platform, canonical);
         Instant now = Instant.now();
 
         return LinkDoc.builder()
                 .id(id)
                 .url(url)
                 .canonicalUrl(canonical)
-                .platform(Platform.NAVER_BLOG)
+                .platform(platform)
                 .query(query)
                 .categoryPrimary(primary != null ? primary.getKo() : null)       // DB에는 한글 저장
                 .categorySecondary(secondary != null ? secondary.getKo() : null) // DB에는 한글 저장

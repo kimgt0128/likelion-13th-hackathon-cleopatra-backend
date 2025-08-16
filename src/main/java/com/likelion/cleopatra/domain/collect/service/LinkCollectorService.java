@@ -2,12 +2,16 @@ package com.likelion.cleopatra.domain.collect.service;
 
 import com.likelion.cleopatra.domain.collect.document.LinkDoc;
 import com.likelion.cleopatra.domain.collect.dto.requeset.CollectNaverBlogReq;
+import com.likelion.cleopatra.domain.collect.dto.requeset.CollectNaverPlaceReq;
 import com.likelion.cleopatra.domain.collect.dto.response.CollectResultRes;
 import com.likelion.cleopatra.domain.collect.exception.LinkCollectErrorCode;
 import com.likelion.cleopatra.domain.collect.exception.LinkCollectException;
 import com.likelion.cleopatra.domain.collect.repository.LinkDocRepository;
-import com.likelion.cleopatra.domain.openApi.naver.dto.blog.NaverBlogSearchRes;
+import com.likelion.cleopatra.domain.openApi.naver.dto.NaverSearchRes;
+import com.likelion.cleopatra.domain.openApi.naver.dto.blog.NaverBlogItem;
+import com.likelion.cleopatra.domain.openApi.naver.dto.place.NaverPlaceItem;
 import com.likelion.cleopatra.domain.openApi.naver.service.NaverApiService;
+import com.likelion.cleopatra.global.common.enums.Platform;
 import com.mongodb.client.result.UpdateResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,7 +54,7 @@ public class LinkCollectorService {
         // 검색어: "행정동(한글) + 공백 + 2차 카테고리(한글)"
         String query = req.neighborhood().getKo() + " " + req.secondary().getKo();
 
-        NaverBlogSearchRes res = naverApiService.searchBlog(query, display, start).block();
+        NaverSearchRes<NaverBlogItem> res = naverApiService.searchBlog(query, display, start).block();
 
         int inserted = 0;
         if (res != null && res.getItems() != null) {
@@ -58,6 +62,7 @@ public class LinkCollectorService {
                     .map(item -> LinkDoc.fromNaver(
                             item.getLink(),
                             query,
+                            Platform.NAVER_BLOG,
                             req.primary(),      // 한글 그대로 저장 (ex. "요식업")
                             req.secondary(),    // 한글 그대로 저장 (ex. "치킨")
                             req.district(),     // Enum (DB에는 코드로)
@@ -71,6 +76,53 @@ public class LinkCollectorService {
             log.info("Naver blog collected: query='{}' inserted=0, totalBatch=0 (empty response)", query);
             throw new LinkCollectException(LinkCollectErrorCode.NO_BLOG_LINK_FOUND);
 
+        }
+
+        return CollectResultRes.builder()
+                .inserted(inserted)
+                .query(query)
+                .display(display)
+                .start(start)
+                .elapsedMs(System.currentTimeMillis() - t0)
+                .build();
+    }
+
+    public CollectResultRes collectNaverPlaceLinks(CollectNaverPlaceReq req) {
+        long t0 = System.currentTimeMillis();
+
+        int display = Math.min(5, Math.max(1, req.displayOrDefault())); // local API 제약
+        int start   = 1; // 문서상 1만 유효
+
+        if (display < 1 || display > 5) throw new LinkCollectException(LinkCollectErrorCode.INVALID_DISPLAY_RANGE);
+        if (start != 1) throw new LinkCollectException(LinkCollectErrorCode.INVALID_START_RANGE);
+        if (req.neighborhood() == null || req.secondary() == null)
+            throw new LinkCollectException(LinkCollectErrorCode.REQUEST_VALIDATION_FAILED);
+
+        String query = req.neighborhood().getKo() + " " + req.secondary().getKo();
+
+        NaverSearchRes<NaverPlaceItem> res =
+                naverApiService.searchPlace(query, display, start, "comment").block();
+
+        int inserted = 0;
+        if (res != null && res.getItems() != null) {
+            inserted = (int) res.getItems().stream()
+                    .map(NaverPlaceItem::getLink)
+                    .filter(l -> l != null && !l.isBlank())
+                    .filter(l -> l.contains("m.place.naver.com") || l.contains("map.naver.com"))
+                    .map(l -> LinkDoc.fromNaver(
+                            l,
+                            query,
+                            Platform.NAVER_PLACE,
+                            req.primary(),
+                            req.secondary(),
+                            req.district(),
+                            req.neighborhood()))
+                    .filter(this::insertIfAbsent)
+                    .count();
+            log.info("Naver place collected: query='{}' inserted={}, totalBatch={}",
+                    query, inserted, res.getItems().size());
+        } else {
+            throw new LinkCollectException(LinkCollectErrorCode.NO_PLACE_LINK_FOUND);
         }
 
         return CollectResultRes.builder()
