@@ -1,13 +1,18 @@
+// LinkCollectorService.java
 package com.likelion.cleopatra.domain.collect.service;
 
 import com.likelion.cleopatra.domain.collect.document.LinkDoc;
-import com.likelion.cleopatra.domain.collect.dto.requeset.CollectNaverBlogReq;
+import com.likelion.cleopatra.domain.collect.dto.requeset.CollectNaverLinkReq;
 import com.likelion.cleopatra.domain.collect.dto.response.CollectResultRes;
 import com.likelion.cleopatra.domain.collect.exception.LinkCollectErrorCode;
 import com.likelion.cleopatra.domain.collect.exception.LinkCollectException;
 import com.likelion.cleopatra.domain.collect.repository.LinkDocRepository;
-import com.likelion.cleopatra.domain.openApi.naver.dto.blog.NaverBlogSearchRes;
+import com.likelion.cleopatra.domain.openApi.naver.dto.NaverSearchRes;
+import com.likelion.cleopatra.domain.openApi.naver.dto.blog.NaverBlogItem;
+import com.likelion.cleopatra.domain.openApi.naver.dto.place.NaverPlaceItem;
 import com.likelion.cleopatra.domain.openApi.naver.service.NaverApiService;
+import com.likelion.cleopatra.global.common.enums.address.Neighborhood;
+import com.likelion.cleopatra.global.common.enums.keyword.Secondary;
 import com.mongodb.client.result.UpdateResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,69 +31,66 @@ public class LinkCollectorService {
     private final LinkDocRepository linkDocRepository;
     private final MongoTemplate mongoTemplate;
 
-    /**
-     * 네이버 블로그 링크 수집/적재.
-     * @param req 수집 요청
-     * @return CollectResultRes (inserted, query, display, start, elapsedMs)
-     */
-
-    public CollectResultRes collectNaverBlogLinks(CollectNaverBlogReq req) {
+    /** 네이버 블로그 링크 수집/적재 */
+    public CollectResultRes collectNaverBlogLinks(CollectNaverLinkReq req) {
         long t0 = System.currentTimeMillis();
 
-        int display = Math.min(100, req.displayOrDefault()); // ← NPE 방지
-        int start   = req.startOrDefault();  // ← NPE 방지
+        int display = Math.min(50, req.displayOrDefault());
+        int start   = req.startOrDefault();
 
-        if (display < 10 || display > 100) throw new LinkCollectException(LinkCollectErrorCode.INVALID_DISPLAY_RANGE);
-        if (start < 1 || start > 1000) throw new LinkCollectException(LinkCollectErrorCode.INVALID_START_RANGE);
+        validateRange(display, start, 10, 50, 1, 100);
+        String query = buildQueryOrThrow(req.neighborhood(), req.secondary());
 
+        NaverSearchRes<NaverBlogItem> res = naverApiService.searchBlog(query, display, start).block();
+        if (res == null || res.getItems() == null) throw new LinkCollectException(LinkCollectErrorCode.NO_BLOG_LINK_FOUND);
 
+        int inserted = (int) res.getItems().stream()
+                .map(it -> LinkDoc.fromNaverBlog(
+                        it.getLink(),
+                        it.getPostdate(),
+                        query,
+                        req.primary(),
+                        req.secondary(),
+                        req.district(),
+                        req.neighborhood()))
+                .filter(this::insertIfAbsent)
+                .count();
 
-        // 쿼리 구성 검증(이론상 @Valid로 보장되지만 수비적으로)
-        if (req.neighborhood() == null || req.secondary() == null) {
-            throw new LinkCollectException(LinkCollectErrorCode.REQUEST_VALIDATION_FAILED);
-        }
-        // 검색어: "행정동(한글) + 공백 + 2차 카테고리(한글)"
-        String query = req.neighborhood().getKo() + " " + req.secondary().getKo();
-
-        NaverBlogSearchRes res = naverApiService.searchBlog(query, display, start).block();
-
-        int inserted = 0;
-        if (res != null && res.getItems() != null) {
-            inserted = (int) res.getItems().stream()
-                    .map(item -> LinkDoc.fromNaver(
-                            item.getLink(),
-                            query,
-                            req.primary(),      // 한글 그대로 저장 (ex. "요식업")
-                            req.secondary(),    // 한글 그대로 저장 (ex. "치킨")
-                            req.district(),     // Enum (DB에는 코드로)
-                            req.neighborhood()  // Enum (DB에는 코드로)
-                    ))
-                    .filter(this::insertIfAbsent)
-                    .count();
-            log.info("Naver blog collected: query='{}' inserted={}, totalBatch={}",
-                    query, inserted, res.getItems().size());
-        } else {
-            log.info("Naver blog collected: query='{}' inserted=0, totalBatch=0 (empty response)", query);
-            throw new LinkCollectException(LinkCollectErrorCode.NO_BLOG_LINK_FOUND);
-
-        }
-
-        return CollectResultRes.builder()
-                .inserted(inserted)
-                .query(query)
-                .display(display)
-                .start(start)
-                .elapsedMs(System.currentTimeMillis() - t0)
-                .build();
+        log.info("Naver blog collected: query='{}' inserted={}, totalBatch={}", query, inserted, res.getItems().size());
+        return new CollectResultRes(inserted, query, display, start, System.currentTimeMillis() - t0);
     }
 
-    /**
-     * 존재 확인 없이 {@code _id} 기준으로 upsert를 수행합니다.
-     * 모든 필드는 {@code $setOnInsert}로만 지정되어 기존 문서를 수정하지 않습니다.
-     *
-     * @param doc 삽입 대상 링크 문서
-     * @return {@code true}: 신규 삽입됨, {@code false}: 이미 존재해 아무 작업도 수행하지 않음
-     */
+    /** 네이버 플레이스 링크 수집/적재 */
+    public CollectResultRes collectNaverPlaceLinks(CollectNaverLinkReq req) {
+        long t0 = System.currentTimeMillis();
+
+        int display = Math.min(5, Math.max(1, req.displayOrDefault())); // API 제약
+        int start   = 1;                                                // API 제약(문서상 1만 유효)
+
+        validateRange(display, start, 1, 5, 1, 1);
+        String query = buildQueryOrThrow(req.neighborhood(), req.secondary());
+
+        NaverSearchRes<NaverPlaceItem> res = naverApiService.searchPlace(query, display, start, "random").block();
+        if (res == null || res.getItems() == null) throw new LinkCollectException(LinkCollectErrorCode.NO_PLACE_LINK_FOUND);
+
+        int inserted = (int) res.getItems().stream()
+                .peek(it -> log.debug("PLACE item title='{}' link='{}' road='{}' addr='{}'",
+                        it.getTitle(), it.getLink(), it.getRoadAddress(), it.getAddress()))
+                .map(it -> LinkDoc.fromNaverPlace(
+                        it,
+                        query,
+                        req.primary(),
+                        req.secondary(),
+                        req.district(),
+                        req.neighborhood()))
+                .filter(this::insertIfAbsent)
+                .count();
+
+        log.info("Naver place collected: query='{}' inserted={}, totalBatch={}", query, inserted, res.getItems().size());
+        return new CollectResultRes(inserted, query, display, start, System.currentTimeMillis() - t0);
+    }
+
+    /* ---------------- upsert 공통 ---------------- */
     private boolean insertIfAbsent(LinkDoc doc) {
         Query q = Query.query(Criteria.where("_id").is(doc.getId()));
         Update u = new Update()
@@ -102,6 +104,14 @@ public class LinkCollectorService {
                 .setOnInsert("district", doc.getDistrict())
                 .setOnInsert("neighborhood", doc.getNeighborhood())
                 .setOnInsert("postdateHint", doc.getPostdateHint())
+                .setOnInsert("placeTitle", doc.getPlaceTitle())
+                .setOnInsert("placeCategory", doc.getPlaceCategory())
+                .setOnInsert("placePhone", doc.getPlacePhone())
+                .setOnInsert("placeAddr", doc.getPlaceAddr())
+                .setOnInsert("placeRoadAddr", doc.getPlaceRoadAddr())
+                .setOnInsert("placeLon", doc.getPlaceLon())
+                .setOnInsert("placeLat", doc.getPlaceLat())
+                .setOnInsert("placeId", doc.getPlaceId())
                 .setOnInsert("status", doc.getStatus())
                 .setOnInsert("priority", doc.getPriority())
                 .setOnInsert("tries", doc.getTries())
@@ -109,6 +119,21 @@ public class LinkCollectorService {
                 .setOnInsert("updatedAt", doc.getUpdatedAt());
 
         UpdateResult r = mongoTemplate.upsert(q, u, LinkDoc.class);
-        return r.getUpsertedId() != null; // 새로 들어갔을 때만 true
+        return r.getUpsertedId() != null;
+    }
+
+    /* ---------------- 공통 검증 ---------------- */
+
+    private void validateRange(int display, int start, int minDisplay, int maxDisplay, int minStart, int maxStart) {
+        if (display < minDisplay || display > maxDisplay)
+            throw new LinkCollectException(LinkCollectErrorCode.INVALID_DISPLAY_RANGE);
+        if (start < minStart || start > maxStart)
+            throw new LinkCollectException(LinkCollectErrorCode.INVALID_START_RANGE);
+    }
+
+    private String buildQueryOrThrow(Neighborhood neighborhood, Secondary secondary) {
+        if (neighborhood == null || secondary == null)
+            throw new LinkCollectException(LinkCollectErrorCode.REQUEST_VALIDATION_FAILED);
+        return neighborhood.getKo() + " " + secondary.getKo();
     }
 }

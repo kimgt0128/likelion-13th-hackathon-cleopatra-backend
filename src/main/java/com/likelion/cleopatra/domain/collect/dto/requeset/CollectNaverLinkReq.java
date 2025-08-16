@@ -5,12 +5,10 @@ import com.likelion.cleopatra.global.common.enums.keyword.Secondary;
 import com.likelion.cleopatra.global.common.enums.address.District;
 import com.likelion.cleopatra.global.common.enums.address.Neighborhood;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
-@Schema(name = "CollectNaverBlogReq", description = "네이버 블로그 수집 요청(한글)")
-public record CollectNaverBlogReq(
+@Schema(name = "CollectNaverLinkReq", description = "네이버 블로그 수집 요청(한글)")
+public record CollectNaverLinkReq(
 
         @NotNull(message = "primary는 필수")
         @Schema(description = "1차 카테고리", example = "외식업", requiredMode = Schema.RequiredMode.REQUIRED)
@@ -28,17 +26,12 @@ public record CollectNaverBlogReq(
         @Schema(description = "동", example = "공릉동", requiredMode = Schema.RequiredMode.REQUIRED)
         Neighborhood neighborhood,
 
-        // null 허용(미전송 시), 값이 있으면 범위 검증
-        @Min(value = 10, message = "display는 10 이상")
-        @Max(value = 100, message = "display는 100 이하")
-        @Schema(description = "한 번에 가져올 개수(최대 100)", example = "50")
+        @Schema(description = "한 번에 가져올 개수(최대 50)", example = "10")
         Integer display,
 
-        @Min(value = 1, message = "start는 1 이상")
-        @Max(value = 1000, message = "start는 1000 이하")
         @Schema(description = "검색 시작 위치(1부터)", example = "1")
         Integer start
 ) {
-    public int displayOrDefault() { return display == null ? 50 : Math.min(100, display); }
+    public int displayOrDefault() { return display == null ? 50 : Math.min(50, display); }
     public int startOrDefault()   { return start   == null ? 1  : start; }
 }

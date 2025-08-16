@@ -1,9 +1,11 @@
 package com.likelion.cleopatra.domain.collect.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
+@AllArgsConstructor
 @Getter
 @Builder
 @Schema(name = "CollectResultRes", description = "수집 결과 요약")
@@ -23,4 +25,14 @@ public class CollectResultRes {
 
     @Schema(description = "처리 시간(ms)", example = "245")
     private final long elapsedMs;
+
+    public CollectResultRes from(int inserted, String query, int display, int start, long elapsedMs) {
+        return CollectResultRes.builder()
+                .inserted(inserted)
+                .query(query)
+                .display(display)
+                .start(start)
+                .elapsedMs(elapsedMs).build();
+    }
+
 }

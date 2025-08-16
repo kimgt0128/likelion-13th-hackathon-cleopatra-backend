@@ -1,8 +1,11 @@
 package com.likelion.cleopatra.domain.openApi.naver.service;
 
-import com.likelion.cleopatra.domain.openApi.naver.dto.blog.NaverBlogSearchRes;
+import com.likelion.cleopatra.domain.openApi.naver.dto.NaverSearchRes;
+import com.likelion.cleopatra.domain.openApi.naver.dto.blog.NaverBlogItem;
 import com.likelion.cleopatra.domain.openApi.naver.dto.cafe.NaverCafeSearchRes;
+import com.likelion.cleopatra.domain.openApi.naver.dto.place.NaverPlaceItem;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -11,6 +14,11 @@ import reactor.core.publisher.Mono;
 public class NaverApiService {
 
     private final WebClient webClient;
+
+    private static final ParameterizedTypeReference<NaverSearchRes<NaverBlogItem>> BLOG_TYPE =
+            new ParameterizedTypeReference<>() {};
+    private static final ParameterizedTypeReference<NaverSearchRes<NaverPlaceItem>> PLACE_TYPE =
+            new ParameterizedTypeReference<>() {};
 
     // Bean 이름을 명시적으로 구별해주기 위해 생성자 직접 작성
     public NaverApiService(@Qualifier("naverWebClient") WebClient webClient) {
@@ -30,7 +38,7 @@ public class NaverApiService {
      * - .json 확장자는 공식 문서상 생략 권장
      * - 쿼리 파라미터에 띄어쓰기 등 특수문자는 내부에서 자동 인코딩 처리됨
      */
-    public  Mono<NaverBlogSearchRes> searchBlog(String query, int display, int start) {
+    public  Mono<NaverSearchRes<NaverBlogItem>> searchBlog(String query, int display, int start) {
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/v1/search/blog.json")
@@ -40,26 +48,22 @@ public class NaverApiService {
                         .queryParam("sort", "date")
                         .build())
                 .retrieve()
-                .bodyToMono(NaverBlogSearchRes.class);
+                .bodyToMono(BLOG_TYPE);
     }
 
-    /**
-     * 네이버 카페글 검색 API 비동기 호출
-     *
-     * @param query   검색어
-     * @param display 표시 개수 (최대 100)
-     * @param start   시작 위치 (최대 1000)
-     */
-    public Mono<NaverCafeSearchRes> searchCafe(String query, int display, int start) {
+    /** 지역(플레이스) 검색: Generic 응답 */
+    public Mono<NaverSearchRes<NaverPlaceItem>> searchPlace(String query, int display, int start, String sort) {
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
-                        .path("/v1/search/cafearticle.json") // 카페글 검색 엔드포인트
+                        .path("/v1/search/local.json")
                         .queryParam("query", query)
-                        .queryParam("display", display)
-                        .queryParam("start", start)
-                        .queryParam("sort", "date")
+                        .queryParam("display", display) // 문서상 최대 5
+                        .queryParam("start", start)     // 문서상 1만 유효
+                        .queryParam("sort", (sort == null || sort.isBlank()) ? "random" : sort)
                         .build())
                 .retrieve()
-                .bodyToMono(NaverCafeSearchRes.class);
+                .bodyToMono(PLACE_TYPE);
     }
+
+
 }

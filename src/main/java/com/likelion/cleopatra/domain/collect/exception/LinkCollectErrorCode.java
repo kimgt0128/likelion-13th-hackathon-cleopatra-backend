@@ -15,6 +15,7 @@ public enum LinkCollectErrorCode implements ErrorCode {
     INVALID_TARGET(400, "target 값이 유효하지 않음"),
 
     NO_BLOG_LINK_FOUND(404, "검색 결과에 블로그 링크 없음"),
+    NO_PLACE_LINK_FOUND(404, "검색 결과에 플레이스 링크 없음"),
     DUPLICATE_LINK_DETECTED(409, "중복 링크 감지"),
     DOMAIN_BLOCKED(403, "수집 금지 도메인"),
     KEYWORD_BLOCKED(403, "금칙어 포함 요청"),
