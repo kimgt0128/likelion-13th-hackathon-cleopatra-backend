@@ -1,7 +1,6 @@
 package com.likelion.cleopatra.domain.collect.document;
 
 import com.likelion.cleopatra.domain.crwal.dto.CrawlRes;
-import com.likelion.cleopatra.domain.crwal.dto.place.NaverPlaceContentRes;
 import com.likelion.cleopatra.global.common.enums.Platform;
 import lombok.*;
 import org.springframework.data.annotation.Id;
@@ -36,31 +35,6 @@ public class ContentDoc {
                 .title(r.getTitle())
                 .contentHtml(r.getHtml())
                 .contentText(r.getText())
-                .crawledAt(Instant.now())
-                .build();
-    }
-
-    public static ContentDoc fromPlace(LinkDoc link, NaverPlaceContentRes res){
-        String text = res.getReviews()==null? "" :
-                res.getReviews().stream()
-                        .map(rv -> rv.getBody()==null? "" : rv.getBody().trim())
-                        .filter(s->!s.isBlank())
-                        .collect(Collectors.joining("\n\n"));
-        String json;
-        try {
-            json = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(res);
-        } catch (Exception e) { json = "{}"; }
-
-        return ContentDoc.builder()
-                .id(link.getId())
-                .platform(link.getPlatform())
-                .url(link.getUrl())
-                .canonicalUrl(link.getCanonicalUrl())
-                .title(link.getPlaceTitle())
-                .contentHtml("")                 // 리뷰는 HTML 저장 안 함
-                .contentText(text)
-                //.reviewCount(res.getReviews()==null?0:res.getReviews().size())
-                //.reviewJson(json)
                 .crawledAt(Instant.now())
                 .build();
     }

@@ -11,9 +11,8 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @Getter
-public class NaverPlaceContentRes {
+public class NaverPlaceLinkRes {
     private String placeId;          // 추출된 placeId
     private String placeName;        // 상호명
-    private String placeUrl;         // m.place 방문자 리뷰 URL
-    private List<NaverPlaceReview> reviews; // 최대 perReview개
+    private String placeUrl;         // https://map.naver.com/p/search/%EA%B3%B5%EB%A6%89%20%EC%9D%BC%EC%8B%9D/place/1641655132
 }

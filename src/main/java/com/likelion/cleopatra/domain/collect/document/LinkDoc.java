@@ -145,35 +145,24 @@ public class LinkDoc {
 
     /* ---------------- 팩토리: 플레이스 ---------------- */
 
-    public static LinkDoc fromNaverPlace(
-            NaverPlaceItem item,
-            String query,
-            Primary primary,
-            Secondary secondary,
-            District district,
-            Neighborhood neighborhood
+    public static LinkDoc fromNaverPlaceLink(
+            String placeId,
+            String placeName,
+            String placeUrl,          // 저장할 외부 URL
+            String query,             // 수집 검색어
+            Primary primary,          // 선택
+            Secondary secondary,      // 선택
+            District district,        // 선택
+            Neighborhood neighborhood // 선택
     ) {
-        String rawTitle = safe(stripTags(item.getTitle()));
-        String rawLink  = safe(item.getLink());
-        String road     = safe(item.getRoadAddress());
-        String addr     = safe(item.getAddress());
-
-        // canonical: 네이버 지도 링크가 있으면 그것으로, 없으면 title+roadAddress 조합으로 합성키 생성
-        String canonicalSeed = (rawLink != null && (rawLink.contains("m.place.naver.com") || rawLink.contains("map.naver.com")))
-                ? rawLink
-                : ("local://" + rawTitle + "|" + road);
-
+        String canonicalSeed = "naver://place/" + placeId;
         String canonical = UrlKey.canonicalize(canonicalSeed);
         String id = UrlKey.idOf(Platform.NAVER_PLACE, canonical);
-
-        Double lon = toCoord(item.getMapx()); // 1270779965 -> 127.0779965
-        Double lat = toCoord(item.getMapy()); // 376236063  -> 37.6236063
-
         Instant now = Instant.now();
 
         return LinkDoc.builder()
                 .id(id)
-                .url(rawLink) // 없을 수도 있음
+                .url(placeUrl)  // 동일 place라도 query가 달라질 수 있으나, dedup은 id(=canonical)로 해결
                 .canonicalUrl(canonical)
                 .platform(Platform.NAVER_PLACE)
                 .query(query)
@@ -181,13 +170,8 @@ public class LinkDoc {
                 .categorySecondary(secondary != null ? secondary.getKo() : null)
                 .district(district)
                 .neighborhood(neighborhood)
-                .placeTitle(rawTitle)
-                .placeCategory(safe(item.getCategory()))
-                .placePhone(emptyToNull(item.getTelephone()))
-                .placeAddr(addr)
-                .placeRoadAddr(road)
-                .placeLon(lon)
-                .placeLat(lat)
+                .placeTitle(placeName)
+                .placeId(placeId)
                 .status(LinkStatus.NEW)
                 .priority(5)
                 .tries(0)
@@ -195,7 +179,6 @@ public class LinkDoc {
                 .updatedAt(now)
                 .build();
     }
-
     /* ---------------- 유틸 ---------------- */
 
     private static String stripTags(String s) {

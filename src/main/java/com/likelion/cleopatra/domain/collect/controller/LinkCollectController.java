@@ -76,7 +76,8 @@ public class LinkCollectController {
             )
             @Valid @RequestBody CollectNaverLinkReq req
     ) {
-        CollectResultRes res = linkCollectorService.collectNaverPlaceLinks(req);
-        return ApiResponse.success(res);
+        //CollectResultRes res = linkCollectorService.collectNaverPlaceLinks(req);
+        //return ApiResponse.success(res);
+        return null;
     }
 }

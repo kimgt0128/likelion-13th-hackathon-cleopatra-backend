@@ -1,4 +1,3 @@
-// LinkCollectorService.java
 package com.likelion.cleopatra.domain.collect.service;
 
 import com.likelion.cleopatra.domain.collect.document.LinkDoc;
@@ -7,9 +6,11 @@ import com.likelion.cleopatra.domain.collect.dto.response.CollectResultRes;
 import com.likelion.cleopatra.domain.collect.exception.LinkCollectErrorCode;
 import com.likelion.cleopatra.domain.collect.exception.LinkCollectException;
 import com.likelion.cleopatra.domain.collect.repository.LinkDocRepository;
+import com.likelion.cleopatra.domain.crwal.dto.CrawlRes;
+import com.likelion.cleopatra.domain.crwal.dto.place.NaverPlaceLinkRes;
+import com.likelion.cleopatra.domain.crwal.impl.NaverPlaceCrawler;
 import com.likelion.cleopatra.domain.openApi.naver.dto.NaverSearchRes;
 import com.likelion.cleopatra.domain.openApi.naver.dto.blog.NaverBlogItem;
-import com.likelion.cleopatra.domain.openApi.naver.dto.place.NaverPlaceItem;
 import com.likelion.cleopatra.domain.openApi.naver.service.NaverApiService;
 import com.likelion.cleopatra.global.common.enums.address.Neighborhood;
 import com.likelion.cleopatra.global.common.enums.keyword.Secondary;
@@ -22,6 +23,8 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Slf4j
 @RequiredArgsConstructor
 @Service
@@ -29,6 +32,7 @@ public class LinkCollectorService {
 
     private final NaverApiService naverApiService;
     private final LinkDocRepository linkDocRepository;
+    private final NaverPlaceCrawler naverPlaceCrawler;
     private final MongoTemplate mongoTemplate;
 
     /** 네이버 블로그 링크 수집/적재 */
@@ -60,34 +64,36 @@ public class LinkCollectorService {
         return new CollectResultRes(inserted, query, display, start, System.currentTimeMillis() - t0);
     }
 
-    /** 네이버 플레이스 링크 수집/적재 */
-    public CollectResultRes collectNaverPlaceLinks(CollectNaverLinkReq req) {
-        long t0 = System.currentTimeMillis();
+    /** 키워드로 플레이스 링크만 수집해 LinkDoc 저장. HTML 일절 저장 안 함. */
+    public CrawlRes naverPlaceCrawl(String keyword, int places, int perIgnored) {
+        int placeLimit = Math.max(1, Math.min(50, places)); // 안전 상한
 
-        int display = Math.min(5, Math.max(1, req.displayOrDefault())); // API 제약
-        int start   = 1;                                                // API 제약(문서상 1만 유효)
+        List<NaverPlaceLinkRes> found = naverPlaceCrawler.crawlLinks(keyword, placeLimit);
+        int picked = found.size();
+        int success = 0, failed = 0;
 
-        validateRange(display, start, 1, 5, 1, 1);
-        String query = buildQueryOrThrow(req.neighborhood(), req.secondary());
+        // 개별 저장하여 성공/실패 카운트
+        for (NaverPlaceLinkRes r : found) {
+            try {
+                LinkDoc doc = LinkDoc.fromNaverPlaceLink(
+                        r.getPlaceId(),
+                        r.getPlaceName(),
+                        r.getPlaceUrl(), // https://map.naver.com/p/search/{query}/place/{placeId}
+                        keyword,
+                        null, null, null, null // 필요 시 주입
+                );
+                log.debug("NAVER_PLACE before-save id={} name='{}' url={}",
+                        r.getPlaceId(), r.getPlaceName(), r.getPlaceUrl());
 
-        NaverSearchRes<NaverPlaceItem> res = naverApiService.searchPlace(query, display, start, "random").block();
-        if (res == null || res.getItems() == null) throw new LinkCollectException(LinkCollectErrorCode.NO_PLACE_LINK_FOUND);
-
-        int inserted = (int) res.getItems().stream()
-                .peek(it -> log.debug("PLACE item title='{}' link='{}' road='{}' addr='{}'",
-                        it.getTitle(), it.getLink(), it.getRoadAddress(), it.getAddress()))
-                .map(it -> LinkDoc.fromNaverPlace(
-                        it,
-                        query,
-                        req.primary(),
-                        req.secondary(),
-                        req.district(),
-                        req.neighborhood()))
-                .filter(this::insertIfAbsent)
-                .count();
-
-        log.info("Naver place collected: query='{}' inserted={}, totalBatch={}", query, inserted, res.getItems().size());
-        return new CollectResultRes(inserted, query, display, start, System.currentTimeMillis() - t0);
+                linkDocRepository.save(doc); // id가 동일하면 업데이트, 아니면 신규
+                success++;
+            } catch (Exception e) {
+                failed++;
+                log.debug("NAVER_PLACE save fail id={} name='{}' reason={}",
+                        r.getPlaceId(), r.getPlaceName(), e.getMessage());
+            }
+        }
+        return new CrawlRes(picked, success, failed);
     }
 
     /* ---------------- upsert 공통 ---------------- */

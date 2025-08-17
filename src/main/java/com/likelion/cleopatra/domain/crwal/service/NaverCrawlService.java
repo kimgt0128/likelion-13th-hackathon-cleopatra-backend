@@ -7,8 +7,7 @@ import com.likelion.cleopatra.domain.collect.document.LinkStatus;
 import com.likelion.cleopatra.domain.collect.repository.ContentRepository;
 import com.likelion.cleopatra.domain.collect.repository.LinkDocRepository;
 import com.likelion.cleopatra.domain.crwal.dto.CrawlRes;
-import com.likelion.cleopatra.domain.crwal.dto.place.NaverPlaceContentRes;
-import com.likelion.cleopatra.domain.crwal.dto.place.NaverPlaceReview;
+import com.likelion.cleopatra.domain.crwal.dto.place.NaverPlaceLinkRes;
 import com.likelion.cleopatra.domain.crwal.exception.CrawlErrorCode;
 import com.likelion.cleopatra.domain.crwal.exception.CrawlException;
 import com.likelion.cleopatra.domain.crwal.exception.failure.FailureClassifier;
@@ -22,9 +21,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -60,62 +57,46 @@ public class NaverCrawlService {
         return new CrawlRes(batch.size(), success, fail);
     }
 
-    /** 키워드로 플레이스 리뷰 수집 후 ContentDoc 저장. reviewJson에는 리뷰 배열만 저장 */
-    public CrawlRes naverPlaceCrawl(String keyword, int places, int per) {
-        int placeLimit = Math.max(1, Math.min(20, places));
-        int perReview  = Math.max(1, Math.min(20, per));
+    public CrawlRes naverPlaceCrawl(String keyword, int places) {
+        int placeLimit = Math.max(1, Math.min(50, places));
 
-        List<NaverPlaceContentRes> list = naverPlaceCrawler.crawl(keyword, placeLimit, perReview);
+        List<NaverPlaceLinkRes> list = naverPlaceCrawler.crawlLinks(keyword, placeLimit);
+        int picked = (list == null) ? 0 : list.size();
+        int success = 0, failed = 0;
 
-        int picked = placeLimit;
-        int succeededPlaces = list.size();
-        int failedPlaces = Math.max(0, picked - succeededPlaces);
-
-        int reviewTotal = 0;
-
-        for (NaverPlaceContentRes r : list) {
-            // 리뷰 배열만(JSON): [{placeId, visitKeywords, body, revisit, tags}, ...]
-            List<ReviewJson> reviewsForJson = new ArrayList<>();
-            if (r.getReviews() != null) {
-                for (NaverPlaceReview rv : r.getReviews()) {
-                    reviewsForJson.add(new ReviewJson(
-                            r.getPlaceId(),
-                            rv.getVisitKeywords(),
-                            rv.getBody(),
-                            rv.getRevisit(),
-                            rv.getTags()
-                    ));
-                }
-            }
-            reviewTotal += reviewsForJson.size();
-
-            String text = reviewsForJson.stream()
-                    .map(x -> x.body == null ? "" : x.body.trim())
-                    .filter(s -> !s.isBlank())
-                    .collect(Collectors.joining("\n\n"));
-
-            String json;
-            try { json = om.writeValueAsString(reviewsForJson); }
-            catch (Exception e) { json = "[]"; }
-
-            ContentDoc doc = ContentDoc.builder()
-                    .platform(Platform.NAVER_PLACE)
-                    .url(r.getPlaceUrl())
-                    .canonicalUrl(null)
-                    .title(r.getPlaceName())
-                    .contentHtml("")                   // HTML 저장 안 함
-                    .contentText(text)
-                    //.reviewCount(reviewsForJson.size())
-                    //.reviewJson(json)                  // 리뷰 배열 JSON만 저장
-                    .crawledAt(Instant.now())
-                    .build();
-
-            contentRepository.save(doc);
+        if (picked == 0) {
+            log.info("NAVER_PLACE skip keyword='{}' reason=empty-result", keyword);
+            return new CrawlRes(0, 0, 0);
         }
 
-        return new CrawlRes(picked, reviewTotal, failedPlaces);
-    }
+        for (NaverPlaceLinkRes r : list) {
+            try {
+                // 저장 직전 로그
+                log.debug("NAVER_PLACE before-save id={} name='{}' url={}",
+                        r.getPlaceId(), r.getPlaceName(), r.getPlaceUrl());
 
+                LinkDoc doc = LinkDoc.fromNaverPlaceLink(
+                        r.getPlaceId(),
+                        r.getPlaceName(),
+                        r.getPlaceUrl(), // https://map.naver.com/p/search/{query}/place/{placeId}
+                        keyword,
+                        null, null, null, null // 필요 시 도메인 값 주입
+                );
+
+                linkDocRepository.save(doc); // HTML 미저장, 링크 메타만
+                success++;
+            } catch (Exception e) {
+                failed++;
+                log.debug("NAVER_PLACE save=FAIL id={} name='{}' reason={}",
+                        r.getPlaceId(), r.getPlaceName(), e.toString());
+            }
+        }
+
+        log.info("NAVER_PLACE summary keyword='{}' picked={} success={} failed={}",
+                keyword, picked, success, failed);
+
+        return new CrawlRes(picked, success, failed);
+    }
     private boolean processOneSafe(LinkDoc doc) {
         final String url = doc.getUrl();
         try {

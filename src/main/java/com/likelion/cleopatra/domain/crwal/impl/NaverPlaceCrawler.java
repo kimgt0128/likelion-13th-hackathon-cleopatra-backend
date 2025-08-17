@@ -1,208 +1,249 @@
-// impl/NaverPlaceCrawler.java
+// src/main/java/com/likelion/cleopatra/domain/crwal/impl/NaverPlaceCrawler.java
 package com.likelion.cleopatra.domain.crwal.impl;
 
-import com.likelion.cleopatra.domain.crwal.dto.place.NaverPlaceContentRes;
-import com.likelion.cleopatra.domain.crwal.dto.place.NaverPlaceReview;
+import com.likelion.cleopatra.domain.crwal.dto.place.NaverPlaceLinkRes;
 import com.likelion.cleopatra.domain.crwal.selector.NaverPlaceSelectors;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.LoadState;
+import com.microsoft.playwright.options.WaitForSelectorState;
+import com.microsoft.playwright.options.WaitUntilState;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class NaverPlaceCrawler {
-
     private final BrowserContext context;
 
-    private static final Pattern PID_IN_URL_1 = Pattern.compile("/restaurant/(\\d+)");
-    private static final Pattern PID_IN_URL_2 = Pattern.compile("[?&]placeId=(\\d+)");
+    private static final Pattern PID_ENTRY = Pattern.compile("/entry/place/(\\d+)");
+    private static final Pattern PID_RESTAURANT = Pattern.compile("/restaurant/(\\d+)");
+    private static final Pattern PID_QUERY = Pattern.compile("[?&]placeId=(\\d+)");
 
-    /** 키워드로 지도 검색 → 상위 placeLimit 매장 각각의 방문자 리뷰(perReview개) 수집 */
-    public List<NaverPlaceContentRes> crawl(String keyword, int placeLimit, int perReview) {
-        final String searchUrl = "https://map.naver.com/p/search/" + URLEncoder.encode(keyword, StandardCharsets.UTF_8);
+    public List<NaverPlaceLinkRes> crawlLinks(String keyword, int placeLimit) {
+        String enc = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
+        String pSearch = "https://map.naver.com/p/search/" + enc + "?c=14.00,0,0,0,dh";
+        String v5Search = "https://map.naver.com/v5/search/" + enc;
+        String pcmapList = "https://pcmap.place.naver.com/place/list?query=" + enc;
 
         Page page = context.newPage();
-        page.setDefaultTimeout(12_000);
-        page.setDefaultNavigationTimeout(15_000);
+        // 리소스 차단 최소화: media만 차단
         page.route("**/*", r -> {
             String t = r.request().resourceType();
-            if ("media".equals(t) || "image".equals(t) || "font".equals(t)) r.abort(); else r.resume();
+            if ("media".equals(t)) r.abort();
+            else r.resume();
         });
 
-        List<NaverPlaceContentRes> results = new ArrayList<>();
+        page.setDefaultTimeout(25_000);
+        page.setDefaultNavigationTimeout(30_000);
+        List<NaverPlaceLinkRes> out = new ArrayList<>();
 
         try {
-            page.navigate(searchUrl);
-            page.waitForLoadState(LoadState.NETWORKIDLE);
+            page.navigate(pSearch, new Page.NavigateOptions().setTimeout(30_000).setWaitUntil(WaitUntilState.LOAD));
+            waitGenerously(page);
+            clickIfVisible(page.locator(NaverPlaceSelectors.BANNER_ACCEPT));
 
-            Frame search = waitFrame(page, "iframe#searchIframe", 8_000);
-            if (search == null) throw new RuntimeException("searchIframe not found");
+            // 데스크톱 보장 확인
+            ensureDesktop(page);
 
-            lazyScroll(search, "#_pcmap_list_scroll_container", 6);
+            Frame searchFrame = waitIframeByIdOrUrl(page, "searchIframe", "/search", 9_000);
+            if (searchFrame == null) {
+                log.debug("[NP] searchIframe miss → v5 전환");
+                page.navigate(v5Search, new Page.NavigateOptions().setTimeout(30_000).setWaitUntil(WaitUntilState.LOAD));
+                waitGenerously(page);
+                clickIfVisible(page.locator(NaverPlaceSelectors.BANNER_ACCEPT));
+                ensureDesktop(page);
+                searchFrame = waitIframeByIdOrUrl(page, "searchIframe", "/search", 9_000);
+            }
+            if (searchFrame == null) {
+                log.debug("[NP] searchIframe miss 2 → pcmap list 전환");
+                page.navigate(pcmapList, new Page.NavigateOptions().setTimeout(30_000).setWaitUntil(WaitUntilState.LOAD));
+                waitGenerously(page);
+                clickIfVisible(page.locator(NaverPlaceSelectors.BANNER_ACCEPT));
+                ensureDesktop(page);
+                searchFrame = waitIframeByIdOrUrl(page, "searchIframe", "/place/list", 9_000);
+            }
+            // 프레임이 끝내 없다면 모바일/단일 DOM. 폴백 경로로 진행.
+            boolean frameLess = (searchFrame == null);
 
-            Locator cards = search.locator("a[href*='place.naver.com']");
-            int targetCount = Math.min(cards.count(), Math.max(1, placeLimit));
-
-            for (int i = 0; i < targetCount; i++) {
-                try {
-                    cards.nth(i).click();
-                    Frame entry = waitFrame(page, "iframe#entryIframe", 8_000);
-                    if (entry == null) throw new RuntimeException("entryIframe not found");
-
-                    String entryUrl = entry.url();
-                    String placeId = extractPlaceId(entryUrl);
-                    if (placeId == null) throw new RuntimeException("placeId not found: " + entryUrl);
-
-                    NaverPlaceContentRes one = crawlReviewsOnMobile(placeId, perReview);
-                    results.add(one);
-
-                    page.waitForTimeout(200);
-                } catch (Exception ignore) {
-                    // 실패한 매장은 스킵
+            int limit = Math.max(1, placeLimit);
+            Locator items;
+            if (!frameLess) {
+                lazyScrollInFrame(searchFrame, NaverPlaceSelectors.SEARCH_LIST_CONTAINER, rand(5, 8));
+                items = searchFrame.locator(NaverPlaceSelectors.SEARCH_LIST_ITEMS);
+                if (items.count() == 0) {
+                    items = searchFrame.locator("xpath=/html/body/div[3]/div/div[2]/div[1]/ul/li");
+                }
+            } else {
+                // 모바일/단일 DOM 폴백
+                items = page.locator(
+                        "#_pcmap_list_scroll_container ul > li, " +               // 데스크톱
+                                "ul._3jtfG > li, ul.RgCez > li, div._1xg8B > ul > li"     // 모바일 추정 폴백
+                );
+                if (items.count() == 0) {
+                    // 마지막 폴백: 화면 스크롤 유도 후 재탐색
+                    for (int k = 0; k < 6; k++) {
+                        page.evaluate("() => window.scrollBy(0, 900)");
+                        page.waitForTimeout(150);
+                    }
+                    items = page.locator("#_pcmap_list_scroll_container ul > li");
                 }
             }
 
-            return results;
+            int available = items.count();
+            int target = Math.min(available, limit);
+            log.debug("[NP] list count={} target={}", available, target);
+
+            for (int i = 0; i < target; i++) {
+                try {
+                    Locator li = items.nth(i);
+                    Locator link = li.locator(NaverPlaceSelectors.SEARCH_CARD_LINK).first();
+                    String name = safe(textOrEmpty(li.locator("span.TYaxT, span.YwYLL").first()));
+                    if (name.isBlank()) name = safe(textOrEmpty(link));
+
+                    if (!tryJsClick(link)) {
+                        link.click(new Locator.ClickOptions().setForce(true).setTimeout(12_000));
+                    }
+                    page.waitForTimeout(800);
+
+                    // 1) 최상위 URL에서 placeId 폴백 회수
+                    String pid = extractPlaceId(page.url());
+
+                    // 2) entryIframe가 있으면 재확인
+                    Frame entry = waitIframeByIdOrUrl(page, "entryIframe", "/entry", 6_000);
+                    if (entry != null) {
+                        String eurl = entry.url();
+                        String pid2 = extractPlaceId(eurl);
+                        if (pid == null) pid = pid2;
+                    }
+
+                    if (pid == null) {
+                        log.debug("[NP] placeId 추출 실패. idx={}", i);
+                        continue;
+                    }
+
+                    String canonical = "https://map.naver.com/p/search/" + enc + "/place/" + pid;
+                    out.add(NaverPlaceLinkRes.builder()
+                            .placeId(pid)
+                            .placeName(name)
+                            .placeUrl(canonical)
+                            .build());
+
+                    jitter(page, 120, 240);
+                } catch (Exception e) {
+                    log.debug("[NP] skip idx={} reason={}", i, e.toString());
+                }
+            }
+            log.debug("[NP] done count={}", out.size());
+            return out;
 
         } finally {
             page.close();
         }
     }
 
-    /** 단일 placeId의 모바일 방문자 리뷰 페이지를 열어 perReview개 수집 후 구조로 반환 */
-    private NaverPlaceContentRes crawlReviewsOnMobile(String placeId, int perReview) {
-        final String url = "https://m.place.naver.com/restaurant/" + placeId + "/review/visitor";
-        Page p = context.newPage();
-        p.setDefaultTimeout(10_000);
-        p.setDefaultNavigationTimeout(15_000);
-        p.route("**/*", r -> {
-            String t = r.request().resourceType();
-            if ("media".equals(t) || "image".equals(t) || "font".equals(t)) r.abort(); else r.resume();
-        });
-
+    /** 관대한 로딩 대기 */
+    private static void waitGenerously(Page p) {
+        try { p.waitForLoadState(LoadState.DOMCONTENTLOADED); } catch (PlaywrightException ignored) {}
+        try { p.waitForLoadState(LoadState.LOAD); } catch (PlaywrightException ignored) {}
+        try { p.waitForLoadState(LoadState.NETWORKIDLE); } catch (PlaywrightException ignored) {}
         try {
-            p.navigate(url);
-            p.waitForLoadState(LoadState.NETWORKIDLE);
-            autoScroll(p, 3_000);
+            p.waitForFunction(
+                    "() => document.readyState==='complete' || " +
+                            "document.querySelector('iframe#searchIframe') || " +
+                            "document.querySelector('#_pcmap_list_scroll_container')",
+                    new Page.WaitForFunctionOptions().setTimeout(8_000));
+        } catch (PlaywrightException ignored) {}
+        p.waitForTimeout(ThreadLocalRandom.current().nextInt(1_200, 2_600));
+    }
 
-            List<NaverPlaceReview> reviews = new ArrayList<>();
-            int seen = 0;
+    /** 모바일 전환 방지용 점검 */
+    private static void ensureDesktop(Page p) {
+        try {
+            p.waitForFunction(
+                    "() => window.innerWidth >= 1000 && !location.host.startsWith('m.')",
+                    new Page.WaitForFunctionOptions().setTimeout(3_000));
+        } catch (PlaywrightException ignored) {}
+    }
 
-            while (reviews.size() < perReview) {
-                Locator cards = p.locator(NaverPlaceSelectors.REVIEW_CARD);
-                int total = cards.count();
-                if (total <= seen) break;
-
-                for (int i = seen; i < total && reviews.size() < perReview; i++) {
-                    Locator card = cards.nth(i);
-                    expandIfAny(card);
-
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> m = (Map<String, Object>) card.evaluate("c=>{"
-                            + "const visit=[...c.querySelectorAll('" + NaverPlaceSelectors.VISIT_KEYWORDS + "')]"
-                            + " .map(e=>(e.textContent||'').trim()).filter(Boolean);"
-                            + "const wrap=c.querySelector('" + NaverPlaceSelectors.REVIEW_TEXT + "');"
-                            + "const body=wrap? (wrap.innerText||'').replace('접기','').trim() : '';"
-                            + "let revisit=null; for(const s of c.querySelectorAll('span')){"
-                            + " const t=(s.textContent||'').trim(); if(t.includes('" + NaverPlaceSelectors.REVISIT_CONTAINS + "')){revisit=t;break;}}"
-                            + "let tags=[]; for(const p of c.querySelectorAll('" + NaverPlaceSelectors.TAG_CHIPS_PARENT + "')){"
-                            + " if(p.querySelector('img')){ const t=(p.textContent||'').trim(); if(t) tags.push(t);} }"
-                            + "return {visit, body, revisit, tags}; }");
-
-                    List<String> visit = castList(m.get("visit"));
-                    String body = safe((String) m.get("body"));
-                    String revisit = safe((String) m.get("revisit"));
-                    List<String> tags = dedup(castList(m.get("tags")));
-
-                    if (visit.isEmpty() && body.isBlank() && revisit.isBlank() && tags.isEmpty()) continue;
-
-                    reviews.add(NaverPlaceReview.builder()
-                            .visitKeywords(visit)
-                            .body(body)
-                            .revisit(revisit)
-                            .tags(tags)
-                            .build());
+    /** 프레임 탐지: id 또는 URL 부분일치 */
+    private static Frame waitIframeByIdOrUrl(Page p, String id, String urlSub, int timeoutMs) {
+        long end = System.currentTimeMillis() + Math.max(1000, timeoutMs);
+        while (System.currentTimeMillis() < end) {
+            // id 기반 우선
+            try {
+                ElementHandle h = p.querySelector("iframe#" + id);
+                if (h != null) {
+                    Frame f = h.contentFrame();
+                    if (f != null) return f;
                 }
+            } catch (Exception ignored) {}
 
-                seen = total;
-                if (reviews.size() >= perReview) break;
-
-                autoScroll(p, 2_500);
+            // URL 기반
+            for (Frame f : p.frames()) {
+                try {
+                    String u = f.url();
+                    String n = f.name();
+                    if ((n != null && n.equals(id)) || (u != null && u.contains(urlSub))) {
+                        return f;
+                    }
+                } catch (Exception ignored) {}
             }
-
-            String placeName = p.title().replace(" - 네이버 플레이스","").trim();
-
-            return NaverPlaceContentRes.builder()
-                    .placeId(placeId)
-                    .placeName(placeName)
-                    .placeUrl(url)
-                    .reviews(reviews)
-                    .build();
-
-        } finally {
-            p.close();
+            p.waitForTimeout(150);
         }
-    }
-
-    // --- 유틸 ---
-
-    private static Frame waitFrame(Page p, String frameCss, int timeoutMs) {
-        ElementHandle h = p.waitForSelector(frameCss,
-                new Page.WaitForSelectorOptions().setTimeout(timeoutMs));
-        return h == null ? null : h.contentFrame();
-    }
-
-    private static void lazyScroll(Frame f, String scrollSel, int steps) {
-        for (int i = 0; i < steps; i++) {
-            try { f.evaluate("sel => { const c=document.querySelector(sel); if(c) c.scrollBy(0, 900); }", scrollSel); }
-            catch (Exception ignore) {}
-            try { Thread.sleep(160); } catch (InterruptedException ignored) {}
-        }
-    }
-
-    private static void autoScroll(Page p, int limitPx) {
-        p.evaluate("L=>new Promise(r=>{let y=0,st=700;let id=setInterval(()=>{window.scrollBy(0,st);y+=st;if(y>=L){clearInterval(id);r(0)}},220)})", limitPx);
-        p.waitForTimeout(350);
-    }
-
-    private static String extractPlaceId(String url) {
-        Matcher m1 = PID_IN_URL_1.matcher(url);
-        if (m1.find()) return m1.group(1);
-        Matcher m2 = PID_IN_URL_2.matcher(url);
-        if (m2.find()) return m2.group(1);
         return null;
     }
 
-    private static String safe(String s) { return s == null ? "" : s.trim(); }
-
-    @SuppressWarnings("unchecked")
-    private static List<String> castList(Object o) {
-        if (!(o instanceof List<?> l)) return Collections.emptyList();
-        List<String> r = new ArrayList<>(l.size());
-        for (Object x : l) {
-            String s = (x == null) ? "" : x.toString().trim();
-            if (!s.isBlank()) r.add(s);
+    /** 프레임 내부 스크롤 */
+    private static void lazyScrollInFrame(Frame f, String containerSel, int steps) {
+        for (int i = 0; i < steps; i++) {
+            try {
+                f.evaluate("sel => { " +
+                        "const c = document.querySelector(sel) || document.querySelector('div#ct') || document.body; " +
+                        "if (c) c.scrollBy(0, Math.floor(700 + Math.random()*500)); }", containerSel);
+            } catch (Exception ignored) {}
+            sleep(rand(90, 160));
         }
-        return r;
     }
 
-    private static List<String> dedup(List<String> in) {
-        return new ArrayList<>(new LinkedHashSet<>(in));
+    /** placeId 추출 */
+    private static String extractPlaceId(String url) {
+        if (url == null) return null;
+        for (Pattern pt : new Pattern[]{PID_ENTRY, PID_RESTAURANT, PID_QUERY}) {
+            Matcher m = pt.matcher(url);
+            if (m.find()) return m.group(1);
+        }
+        return null;
     }
 
-    private void expandIfAny(Locator card){
-        try{
-            Locator more = card.locator(NaverPlaceSelectors.REVIEW_TEXT_MORE);
-            if (more.count() > 0 && more.first().isVisible()) {
-                more.first().click(new Locator.ClickOptions().setTimeout(1500));
-            }
-        } catch (PlaywrightException ignore) { }
+    private static boolean tryJsClick(Locator loc) {
+        try { loc.evaluate("el => el.click()"); return true; }
+        catch (PlaywrightException e) { return false; }
     }
+
+    private static void clickIfVisible(Locator loc) {
+        try {
+            Locator x = loc.first();
+            if (x.count() > 0 && x.isVisible())
+                x.click(new Locator.ClickOptions().setTimeout(1_500));
+        } catch (Exception ignored) {}
+    }
+
+    private static String textOrEmpty(Locator loc) {
+        try { return loc.innerText(); } catch (Exception e) { return ""; }
+    }
+
+    private static String safe(String s) { return s == null ? "" : s.trim(); }
+    private static void jitter(Page p, int minMs, int maxMs) { p.waitForTimeout(rand(minMs, maxMs)); }
+    private static int rand(int lo, int hi) { return ThreadLocalRandom.current().nextInt(lo, hi + 1); }
+    private static void sleep(long ms) { try { Thread.sleep(ms); } catch (InterruptedException ignored) {} }
 }
