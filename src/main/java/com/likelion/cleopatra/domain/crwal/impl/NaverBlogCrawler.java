@@ -1,7 +1,7 @@
 package com.likelion.cleopatra.domain.crwal.impl;
 
-import com.likelion.cleopatra.domain.crwal.dto.NaverBlogContentRes;
-import com.likelion.cleopatra.domain.crwal.selector.NaverSelectors;
+import com.likelion.cleopatra.domain.crwal.dto.CrawlRes;
+import com.likelion.cleopatra.domain.crwal.selector.NaverBlogSelectors;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.LoadState;
 import com.microsoft.playwright.options.WaitUntilState;
@@ -21,7 +21,7 @@ public class NaverBlogCrawler {
 
     private final BrowserContext context;
 
-    public NaverBlogContentRes crawl(String originalUrl) {
+    public CrawlRes.NaverBlogContentRes crawl(String originalUrl) {
         final String url = toMobileUrl(originalUrl);
         final Page page = context.newPage();
         try {
@@ -45,7 +45,7 @@ public class NaverBlogCrawler {
             expandAll(page);
 
             // [ADD] 문단 렌더 안정화(문단 노드가 늦게 붙는 케이스)
-            page.waitForSelector("p.se-text-paragraph, " + NaverSelectors.LEGACY_BODY,
+            page.waitForSelector("p.se-text-paragraph, " + NaverBlogSelectors.LEGACY_BODY,
                     new Page.WaitForSelectorOptions().setTimeout(2000).setState(WaitForSelectorState.ATTACHED));
 
             // [CHG] 본문 컨테이너 확보(모바일 → 레거시 → mainFrame)
@@ -70,7 +70,7 @@ public class NaverBlogCrawler {
             log.debug("NAVER_BLOG result url={} title='{}' htmlLen={} textLen={} sample=\"{}\"",
                     url, compact(title), html.length(), text.length(), sample(text, 160));
 
-            return new NaverBlogContentRes(title, html, text);
+            return new CrawlRes.NaverBlogContentRes(title, html, text);
         } finally {
             page.close();
         }
@@ -79,10 +79,10 @@ public class NaverBlogCrawler {
     // --- helpers ---
 
     private Locator requireBody(Page page) {
-        Locator se = page.locator(NaverSelectors.SE_MAIN);
+        Locator se = page.locator(NaverBlogSelectors.SE_MAIN);
         if (se.count() > 0) return se.first();
 
-        Locator legacy = page.locator(NaverSelectors.LEGACY_BODY);
+        Locator legacy = page.locator(NaverBlogSelectors.LEGACY_BODY);
         if (legacy.count() > 0) return legacy.first();
 
         // [ADD] 데스크톱 구형 iframe(mainFrame)
@@ -91,9 +91,9 @@ public class NaverBlogCrawler {
             if ("mainFrame".equals(f.name())) { main = f; break; }
         }
         if (main != null) {
-            Locator fSe = main.locator(NaverSelectors.SE_MAIN);
+            Locator fSe = main.locator(NaverBlogSelectors.SE_MAIN);
             if (fSe.count() > 0) return fSe.first();
-            Locator fLegacy = main.locator(NaverSelectors.LEGACY_BODY);
+            Locator fLegacy = main.locator(NaverBlogSelectors.LEGACY_BODY);
             if (fLegacy.count() > 0) return fLegacy.first();
         }
 
@@ -101,9 +101,9 @@ public class NaverBlogCrawler {
         if (se.count() > 0) return se.first();
         if (legacy.count() > 0) return legacy.first();
         if (main != null) {
-            Locator fSe = main.locator(NaverSelectors.SE_MAIN);
+            Locator fSe = main.locator(NaverBlogSelectors.SE_MAIN);
             if (fSe.count() > 0) return fSe.first();
-            Locator fLegacy = main.locator(NaverSelectors.LEGACY_BODY);
+            Locator fLegacy = main.locator(NaverBlogSelectors.LEGACY_BODY);
             if (fLegacy.count() > 0) return fLegacy.first();
         }
         throw new IllegalStateException("본문 컨테이너 없음");
@@ -113,7 +113,7 @@ public class NaverBlogCrawler {
     private void expandAll(Page p) {
         // 1) 페이지 전역
         for (int round = 0; round < 4; round++) {
-            int clicked = clickAllOnce(p::locator, NaverSelectors.EXPANDERS); // [FIX] 메서드 레퍼런스 사용
+            int clicked = clickAllOnce(p::locator, NaverBlogSelectors.EXPANDERS); // [FIX] 메서드 레퍼런스 사용
             if (clicked == 0) break;
             p.waitForTimeout(180);
         }
@@ -124,7 +124,7 @@ public class NaverBlogCrawler {
         }
         if (main != null) {
             for (int round = 0; round < 4; round++) {
-                int clicked = clickAllOnce(main::locator, NaverSelectors.EXPANDERS); // [FIX]
+                int clicked = clickAllOnce(main::locator, NaverBlogSelectors.EXPANDERS); // [FIX]
                 if (clicked == 0) break;
                 p.waitForTimeout(180);
             }
@@ -156,8 +156,8 @@ public class NaverBlogCrawler {
     private String extractFullText(Locator body) {
         String js =
                 "root => {" +
-                        "  const textSel = `" + NaverSelectors.SE_TEXT_NODES + "`;" +             // [ADD]
-                        "  const nonTextAncSel = `" + NaverSelectors.SE_NON_TEXT_COMPONENTS + "`;" + // [ADD]
+                        "  const textSel = `" + NaverBlogSelectors.SE_TEXT_NODES + "`;" +             // [ADD]
+                        "  const nonTextAncSel = `" + NaverBlogSelectors.SE_NON_TEXT_COMPONENTS + "`;" + // [ADD]
                         "  const nodes = Array.from(root.querySelectorAll(textSel));" +
                         "  const parts = [];" +
                         "  for (const n of nodes) {" +
@@ -236,7 +236,7 @@ public class NaverBlogCrawler {
     }
 
     private String extractTitle(Page page) {
-        for (String sel : NaverSelectors.TITLE.split(",")) {
+        for (String sel : NaverBlogSelectors.TITLE.split(",")) {
             Locator l = page.locator(sel.trim());
             if (l.count() > 0) {
                 if (sel.contains("meta")) {
