@@ -1,6 +1,6 @@
 package com.likelion.cleopatra.domain.crwal.impl;
 
-import com.likelion.cleopatra.domain.crwal.dto.place.NaverPlaceReview;
+import com.likelion.cleopatra.domain.crwal.dto.place.NaverPlaceReviewRes;
 import com.likelion.cleopatra.domain.crwal.selector.NaverPlaceSelectors;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.LoadState;
@@ -31,8 +31,8 @@ public class NaverReviewCrawler {
     private static final boolean TRACE = Boolean.parseBoolean(System.getProperty("crawler.trace", "true"));
 
     /** placeLink에서 최대 count개 리뷰 수집 */
-    public List<NaverPlaceReview> crawlReviews(String placeLink, int count) {
-        List<NaverPlaceReview> out = new ArrayList<>();
+    public List<NaverPlaceReviewRes> crawlReviews(String placeLink, int count) {
+        List<NaverPlaceReviewRes> out = new ArrayList<>();
         String ts = TS.format(LocalDateTime.now());
         log.info("[NR] start url={} count={}", trimUrl(placeLink), count);
 
@@ -135,7 +135,7 @@ public class NaverReviewCrawler {
                     // 만족 태그 칩
                     List<String> tags = cleanTexts(li.locator("div.pui__HLNvmI :not(a).pui__jhpEyP").allInnerTexts());
 
-                    NaverPlaceReview rv = NaverPlaceReview.builder()
+                    NaverPlaceReviewRes rv = NaverPlaceReviewRes.builder()
                             .link(placeLink)
                             .visitKeywords(visitKeywords)
                             .body(body)
@@ -173,11 +173,11 @@ public class NaverReviewCrawler {
     }
 
     /** 기존 시그니처 유지: count번째(1-based) 리뷰 1건 */
-    public NaverPlaceReview crawlReview(String placeLink, int count) {
-        List<NaverPlaceReview> list = crawlReviews(placeLink, count);
+    public NaverPlaceReviewRes crawlReview(String placeLink, int count) {
+        List<NaverPlaceReviewRes> list = crawlReviews(placeLink, count);
         if (list.isEmpty()) return null;
         int idx = Math.min(count, list.size()) - 1;
-        NaverPlaceReview rv = list.get(idx);
+        NaverPlaceReviewRes rv = list.get(idx);
         log.info("[NR] single index={} revisit='{}' bodyLen={}", idx, rv.getRevisit(), rv.getBody() == null ? 0 : rv.getBody().length());
         return rv;
     }

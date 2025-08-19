@@ -1,7 +1,6 @@
 package com.likelion.cleopatra.domain.collect.document;
 
 import com.likelion.cleopatra.domain.collect.util.UrlKey;
-import com.likelion.cleopatra.domain.openApi.naver.dto.place.NaverPlaceItem;
 import com.likelion.cleopatra.global.common.enums.Platform;
 import com.likelion.cleopatra.global.common.enums.address.District;
 import com.likelion.cleopatra.global.common.enums.address.Neighborhood;
@@ -50,7 +49,7 @@ public class LinkDoc {
     private Platform platform;          // NAVER_BLOG, NAVER_PLACE, ...
 
     // 공통 태깅
-    private String query;               // 수집 검색어(예: "공릉동 일식")
+    private String keyword;               // 수집 검색어(예: "공릉동 일식")
     private String categoryPrimary;     // 예: 외식업
     private String categorySecondary;   // 예: 일식
 
@@ -129,7 +128,7 @@ public class LinkDoc {
                 .url(url)
                 .canonicalUrl(canonical)
                 .platform(Platform.NAVER_BLOG)
-                .query(query)
+                .keyword(query)
                 .categoryPrimary(primary != null ? primary.getKo() : null)
                 .categorySecondary(secondary != null ? secondary.getKo() : null)
                 .district(district)
@@ -165,7 +164,7 @@ public class LinkDoc {
                 .url(placeUrl)  // 동일 place라도 query가 달라질 수 있으나, dedup은 id(=canonical)로 해결
                 .canonicalUrl(canonical)
                 .platform(Platform.NAVER_PLACE)
-                .query(query)
+                .keyword(query)
                 .categoryPrimary(primary != null ? primary.getKo() : null)
                 .categorySecondary(secondary != null ? secondary.getKo() : null)
                 .district(district)

@@ -8,7 +8,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
-import java.util.stream.Collectors;
 
 @Getter
 @Builder
@@ -19,9 +18,10 @@ import java.util.stream.Collectors;
 public class ContentDoc {
     @Id private String id;              // LinkDoc.id와 동일(1:1)
     private Platform platform;
+    private String keyword;
     private String url;
     private String canonicalUrl;
-    private String title;
+    private String title; // 블로그 제목, 네이버 플레이스 가게 이름, 유튜브 영상 제목
     private String contentHtml;
     private String contentText;
     private Instant crawledAt;
@@ -32,6 +32,7 @@ public class ContentDoc {
                 .platform(link.getPlatform())
                 .url(link.getUrl())
                 .canonicalUrl(link.getCanonicalUrl())
+                .keyword(link.getKeyword())
                 .title(r.getTitle())
                 .contentHtml(r.getHtml())
                 .contentText(r.getText())
@@ -41,15 +42,15 @@ public class ContentDoc {
 
     // ContentDoc.java (메서드 추가/구현)
     public static ContentDoc fromReview(LinkDoc link, String placeName, String reviewJson) {
-        String title = "[리뷰] " + (placeName == null ? "" : placeName) + " 방문자 리뷰";
         return ContentDoc.builder()
-                .id(link.getId())                        // LinkDoc와 1:1
-                .platform(link.getPlatform())            // NAVER_PLACE 등
+                .id(link.getId())
+                .platform(link.getPlatform())
                 .url(link.getUrl())
                 .canonicalUrl(link.getCanonicalUrl())
-                .title(title.trim())
-                .contentHtml(null)                       // HTML 없음
-                .contentText(reviewJson)                 // 리뷰 JSON payload
+                .keyword(link.getKeyword())
+                .title(placeName)                 // 플레이스 이름
+                .contentHtml(null)                // 리뷰는 텍스트(JSON)로 저장
+                .contentText(reviewJson)          // 리뷰 배열 JSON
                 .crawledAt(Instant.now())
                 .build();
     }

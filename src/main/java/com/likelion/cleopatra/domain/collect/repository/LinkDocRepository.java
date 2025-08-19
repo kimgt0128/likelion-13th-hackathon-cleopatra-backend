@@ -27,4 +27,10 @@ public interface LinkDocRepository extends MongoRepository<LinkDoc, String> {
      * - page 번호는 항상 0으로 고정. “다음 배치”는 updatedAt/status 변경으로 자연히 분리된다.
      */
     Page<LinkDoc> findByPlatformAndStatus(Platform platform, LinkStatus status, Pageable pageable);
+    Page<LinkDoc> findByPlatformAndStatusAndKeyword(
+            Platform platform,
+            LinkStatus status,
+            String keyword,
+            Pageable pageable
+    );
 }
