@@ -66,4 +66,11 @@ public class NaverCrawlController {
 
         return ApiResponse.success(res);
     }
+
+    @PostMapping("/revies")
+    public ApiResponse<CrawlRes> crawlRevies(
+
+    ) {
+        return null;
+    }
 }
