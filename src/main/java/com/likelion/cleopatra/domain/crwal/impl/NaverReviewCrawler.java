@@ -5,6 +5,7 @@ import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.LoadState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
+@Component
 public class NaverReviewCrawler {
 
     /** Playwright Page는 외부(서비스/빈)에서 주입 */

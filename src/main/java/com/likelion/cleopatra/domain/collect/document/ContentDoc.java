@@ -38,4 +38,19 @@ public class ContentDoc {
                 .crawledAt(Instant.now())
                 .build();
     }
+
+    // ContentDoc.java (메서드 추가/구현)
+    public static ContentDoc fromReview(LinkDoc link, String placeName, String reviewJson) {
+        String title = "[리뷰] " + (placeName == null ? "" : placeName) + " 방문자 리뷰";
+        return ContentDoc.builder()
+                .id(link.getId())                        // LinkDoc와 1:1
+                .platform(link.getPlatform())            // NAVER_PLACE 등
+                .url(link.getUrl())
+                .canonicalUrl(link.getCanonicalUrl())
+                .title(title.trim())
+                .contentHtml(null)                       // HTML 없음
+                .contentText(reviewJson)                 // 리뷰 JSON payload
+                .crawledAt(Instant.now())
+                .build();
+    }
 }
