@@ -39,11 +39,14 @@ public class NaverCrawlService {
     private final ObjectMapper om = new ObjectMapper();
 
     // @Scheduled(fixedDelay = 60_000)
-    public CrawlRes naverBlogCrawl(int size) {
+    public CrawlRes naverBlogCrawl(String keyword, int size) {
         var sort = Sort.by(Sort.Order.desc("priority"), Sort.Order.asc("updatedAt"));
         var page = PageRequest.of(0, size, sort);
 
-        var batch = linkDocRepository.findByPlatformAndStatus(Platform.NAVER_BLOG, LinkStatus.NEW, page).getContent();
+        var batch = linkDocRepository
+                .findByPlatformAndStatusAndKeyword(Platform.NAVER_BLOG, LinkStatus.NEW, keyword, page)
+                .getContent();
+        //var batch = linkDocRepository.findByPlatformAndStatus(Platform.NAVER_BLOG, LinkStatus.NEW, page).getContent();
         if (batch.isEmpty()) {
             log.info("CRAWL skip platform=NAVER_BLOG reason=empty-batch");
             throw new CrawlException(CrawlErrorCode.NO_LINKS_TO_CRAWL);
