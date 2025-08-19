@@ -67,10 +67,29 @@ public class NaverCrawlController {
         return ApiResponse.success(res);
     }
 
-    @PostMapping("/revies")
-    public ApiResponse<CrawlRes> crawlRevies(
-
+    @PostMapping("/reviews")
+    @Operation(
+            summary = "네이버 플레이스 리뷰 크롤",
+            description = """
+        키워드로 플레이스를 찾고 각 매장의 '방문자 리뷰'를 수집합니다.
+        - keyword: 검색 키워드 (예: 공릉 일식)
+        - size: 매장당 수집할 리뷰 수 (기본 10, 1~50)
+        예) POST /api/crawl/naver/reviews?keyword=공릉%20일식&size=10
+        """
+    )
+    public ApiResponse<CrawlRes> crawlReviews(
+            @Parameter(description = "검색 키워드", example = "공릉 일식")
+            @RequestParam @NotBlank String keyword,
+            @Parameter(description = "매장당 리뷰 수(1~50)", example = "10")
+            @RequestParam(defaultValue = "10") @Min(1) @Max(50) int size
     ) {
-        return null;
+        String q = keyword.trim();
+        log.debug("NAVER_REVIEW request keyword='{}' size={}", q, size);
+
+        CrawlRes res = naverCrawlService.naverReivewCrawl(q, size);
+        log.debug("NAVER_REVIEW result picked={} success={} failed={}",
+                res.getPicked(), res.getSuccess(), res.getFailed());
+
+        return ApiResponse.success(res);
     }
 }
