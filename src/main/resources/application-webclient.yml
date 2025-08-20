@@ -3,3 +3,7 @@ service:
     url: ${NAVER_BASE_URL}          # 예: https://openapi.naver.com
     client-id: ${NAVER_CLIENT_ID}
     client-secret: ${NAVER_CLIENT_SECRET}
+
+  rtms:
+    url: https://apis.data.go.kr/1613000/RTMSDataSvcNrgTrade/getRTMSDataSvcNrgTrade
+    service-key: ${RTMS_SERVICE_KEY}   # 원본키 그대로(+ 포함). 환경변수 권장
