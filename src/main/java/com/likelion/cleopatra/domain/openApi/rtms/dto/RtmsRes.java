@@ -10,17 +10,28 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RtmsRes {
-    private String lawdCd;           // 예: 11110
-    private String anchorYm;         // 기준월(YYYYMM), 예: 202505
-    private int months;              // 집계 개월수(기본 12)
+    private String lawdCd;
+    private String anchorYm;
+    private int months;
 
     private String amountUnit;       // "만원"
     private String areaUnit;         // "㎡"
+    private String unitPriceSqmUnit; // "만원/㎡"
+    private String unitPricePUnit;   // "만원/평"
+
     private double thresholdPyeong;  // 30.0
     private double thresholdSqm;     // 99.17355
 
-    private long smallCount;         // 소형 표본수
-    private long largeCount;         // 대형 표본수
-    private double smallAvgAmount;   // 소형 평균거래가(만원)
-    private double largeAvgAmount;   // 대형 평균거래가(만원)
+    private long smallCount;
+    private long largeCount;
+
+    private double smallAvgAmount;    // 만원
+    private double largeAvgAmount;    // 만원
+    private double smallMedianAmount; // 만원
+    private double largeMedianAmount; // 만원
+
+    private double smallAvgPerSqm;    // 만원/㎡
+    private double largeAvgPerSqm;    // 만원/㎡
+    private double smallAvgPerPyeong; // 만원/평
+    private double largeAvgPerPyeong; // 만원/평
 }

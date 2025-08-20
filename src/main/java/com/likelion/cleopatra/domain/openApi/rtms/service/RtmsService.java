@@ -8,6 +8,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.YearMonth;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -22,7 +25,6 @@ public class RtmsService {
     private static final double THRESHOLD_PYEONG = 30.0;
     private static final double THRESHOLD_SQM = THRESHOLD_PYEONG * PYEONG_TO_SQM; // 99.17355
 
-    /** 원본 XML */
     public String fetchRaw(String lawdCd, String dealYmd) {
         return rtmsWebClient.get()
                 .uri(u -> u.queryParam("LAWD_CD", lawdCd)
@@ -33,13 +35,12 @@ public class RtmsService {
                 .block();
     }
 
-    /**
-     * 기준월 포함 최근 12개월, 30평 미만/이상 평균(만원) 계산.
-     * 반환은 동기 DTO.
-     */
+    /** 12개월, 30평 미만/이상 평균·중위값(만원) + ㎡당/평당 평균가격(만원/㎡, 만원/평) */
     public RtmsRes avgBySizeLast12Months(String lawdCd, YearMonth anchorInclusive) {
-        double smallSum = 0.0; long smallCnt = 0;
-        double largeSum = 0.0; long largeCnt = 0;
+        List<Double> smallAmt = new ArrayList<>();
+        List<Double> largeAmt = new ArrayList<>();
+        List<Double> smallPerSqm = new ArrayList<>();
+        List<Double> largePerSqm = new ArrayList<>();
 
         for (int i = 0; i < 12; i++) {
             YearMonth ym = anchorInclusive.minusMonths(i);
@@ -47,33 +48,42 @@ public class RtmsService {
             String xml = fetchRaw(lawdCd, ymStr);
             if (xml == null || xml.isEmpty()) continue;
 
-            // item 단위로 파싱 → 각 item에서 buildingAr와 dealAmount 함께 추출
             Matcher itemM = Pattern.compile("<item>(.*?)</item>", Pattern.DOTALL).matcher(xml);
             while (itemM.find()) {
                 String item = itemM.group(1);
 
                 Double areaSqm = extractDouble(item, "<buildingAr>([^<]*)</buildingAr>");
-                // area가 없거나 0이면 제외
                 if (areaSqm == null || areaSqm <= 0) continue;
 
                 Double amountManWon = extractMoney(item, "<dealAmount>([^<]+)</dealAmount>");
                 if (amountManWon == null || amountManWon <= 0) continue;
 
+                double perSqm = amountManWon / areaSqm; // 만원/㎡
+
                 if (areaSqm < THRESHOLD_SQM) {
-                    smallSum += amountManWon;
-                    smallCnt++;
+                    smallAmt.add(amountManWon);
+                    smallPerSqm.add(perSqm);
                 } else {
-                    largeSum += amountManWon;
-                    largeCnt++;
+                    largeAmt.add(amountManWon);
+                    largePerSqm.add(perSqm);
                 }
             }
         }
 
-        double smallAvg = smallCnt == 0 ? 0.0 : smallSum / smallCnt;
-        double largeAvg = largeCnt == 0 ? 0.0 : largeSum / largeCnt;
+        long smallCount = smallAmt.size();
+        long largeCount = largeAmt.size();
 
-        YearMonth a = anchorInclusive;
-        String anchorYm = a.getYear() + String.format("%02d", a.getMonthValue());
+        double smallAvgAmount  = avg(smallAmt);
+        double largeAvgAmount  = avg(largeAmt);
+        double smallMedAmount  = median(smallAmt);
+        double largeMedAmount  = median(largeAmt);
+
+        double smallAvgPerSqm  = avg(smallPerSqm);
+        double largeAvgPerSqm  = avg(largePerSqm);
+        double smallAvgPerPy   = smallAvgPerSqm * PYEONG_TO_SQM; // 만원/평
+        double largeAvgPerPy   = largeAvgPerSqm * PYEONG_TO_SQM; // 만원/평
+
+        String anchorYm = anchorInclusive.getYear() + String.format("%02d", anchorInclusive.getMonthValue());
 
         return RtmsRes.builder()
                 .lawdCd(lawdCd)
@@ -81,18 +91,40 @@ public class RtmsService {
                 .months(12)
                 .amountUnit("만원")
                 .areaUnit("㎡")
+                .unitPriceSqmUnit("만원/㎡")
+                .unitPricePUnit("만원/평")
                 .thresholdPyeong(THRESHOLD_PYEONG)
                 .thresholdSqm(THRESHOLD_SQM)
-                .smallCount(smallCnt)
-                .largeCount(largeCnt)
-                .smallAvgAmount(round1(smallAvg))
-                .largeAvgAmount(round1(largeAvg))
+                .smallCount(smallCount)
+                .largeCount(largeCount)
+                .smallAvgAmount(round1(smallAvgAmount))
+                .largeAvgAmount(round1(largeAvgAmount))
+                .smallMedianAmount(round1(smallMedAmount))
+                .largeMedianAmount(round1(largeMedAmount))
+                .smallAvgPerSqm(round2(smallAvgPerSqm))
+                .largeAvgPerSqm(round2(largeAvgPerSqm))
+                .smallAvgPerPyeong(round2(smallAvgPerPy))
+                .largeAvgPerPyeong(round2(largeAvgPerPy))
                 .build();
     }
 
-    // --------- helpers ---------
+    // ---------- helpers ----------
+    private static double avg(List<Double> xs) {
+        if (xs == null || xs.isEmpty()) return 0.0;
+        double s = 0.0; for (double v : xs) s += v;
+        return s / xs.size();
+    }
 
-    /** money 문자열 "300,000" → 300000.0 (만원 단위 유지) */
+    private static double median(List<Double> xs) {
+        if (xs == null || xs.isEmpty()) return 0.0;
+        List<Double> c = new ArrayList<>(xs);
+        Collections.sort(c);
+        int n = c.size();
+        if ((n & 1) == 1) return c.get(n / 2);
+        return (c.get(n / 2 - 1) + c.get(n / 2)) / 2.0;
+    }
+
+    /** money "300,000" → 300000.0 (만원) */
     private static Double extractMoney(String src, String regex) {
         Matcher m = Pattern.compile(regex).matcher(src);
         if (!m.find()) return null;
@@ -103,7 +135,6 @@ public class RtmsService {
         try { return Double.parseDouble(raw); } catch (NumberFormatException e) { return null; }
     }
 
-    /** double 필드 추출 */
     private static Double extractDouble(String src, String regex) {
         Matcher m = Pattern.compile(regex).matcher(src);
         if (!m.find()) return null;
@@ -114,7 +145,6 @@ public class RtmsService {
         try { return Double.parseDouble(raw); } catch (NumberFormatException e) { return null; }
     }
 
-    private static double round1(double v) {
-        return Math.round(v * 10.0) / 10.0;
-    }
+    private static double round1(double v) { return Math.round(v * 10.0) / 10.0; }  // 금액
+    private static double round2(double v) { return Math.round(v * 100.0) / 100.0; } // 단가
 }
