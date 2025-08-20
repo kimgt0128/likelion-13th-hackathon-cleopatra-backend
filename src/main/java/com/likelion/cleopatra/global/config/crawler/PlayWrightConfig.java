@@ -1,27 +1,52 @@
+// src/main/java/com/likelion/cleopatra/global/config/crawler/PlayWrightConfig.java
 package com.likelion.cleopatra.global.config.crawler;
 
-import com.microsoft.playwright.Browser;
-import com.microsoft.playwright.BrowserContext;
-import com.microsoft.playwright.BrowserType;
-import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.List;
+import java.util.Map;
 
 @Configuration
 public class PlayWrightConfig {
 
     @Bean(destroyMethod = "close")
-    public Playwright playwright() {return Playwright.create(); }
+    public Playwright playwright() {
+        return Playwright.create();
+    }
 
     @Bean(destroyMethod = "close")
     public Browser browser(Playwright playwright) {
-        return playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(true));
+        // -Dplaywright.headless=false 로 로컬 디버깅
+        boolean headless = Boolean.parseBoolean(System.getProperty("playwright.headless", "true"));
+
+        return playwright.chromium().launch(new BrowserType.LaunchOptions()
+                .setHeadless(headless)
+                .setArgs(List.of(
+                        "--disable-blink-features=AutomationControlled",
+                        "--no-first-run",
+                        "--no-default-browser-check",
+                        "--disable-dev-shm-usage",
+                        "--disable-gpu"
+                )));
     }
 
-    @Bean
+    @Bean(destroyMethod = "close")
     public BrowserContext browserContext(Browser browser) {
         return browser.newContext(new Browser.NewContextOptions()
-                .setUserAgent("Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1")
-                .setViewportSize(390, 844));
+                // 데스크톱 강제
+                .setIsMobile(false)
+                .setViewportSize(1440, 900)
+                .setDeviceScaleFactor(1)
+                .setLocale("ko-KR")
+                .setTimezoneId("Asia/Seoul")
+                .setUserAgent(
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+                                "AppleWebKit/537.36 (KHTML, like Gecko) " +
+                                "Chrome/126.0.0.0 Safari/537.36")
+                .setExtraHTTPHeaders(Map.of(
+                        "Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.7,en;q=0.6"
+                )));
     }
 }

@@ -1,7 +1,7 @@
 package com.likelion.cleopatra.domain.crwal.selector;
 
-public final class NaverSelectors {
-    private NaverSelectors() {}
+public final class NaverBlogSelectors {
+    private NaverBlogSelectors() {}
 
     // 스마트에디터3 모바일 뷰(본문 컨테이너)
     public static final String SE_MAIN = "div.se-main-container";
