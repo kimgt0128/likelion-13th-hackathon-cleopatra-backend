@@ -104,7 +104,7 @@ public class LinkCollectorService {
                 .setOnInsert("url", doc.getUrl())
                 .setOnInsert("canonicalUrl", doc.getCanonicalUrl())
                 .setOnInsert("platform", doc.getPlatform())
-                .setOnInsert("query", doc.getKeyword())
+                .setOnInsert("keyword", doc.getKeyword())
                 .setOnInsert("categoryPrimary", doc.getCategoryPrimary())
                 .setOnInsert("categorySecondary", doc.getCategorySecondary())
                 .setOnInsert("district", doc.getDistrict())
