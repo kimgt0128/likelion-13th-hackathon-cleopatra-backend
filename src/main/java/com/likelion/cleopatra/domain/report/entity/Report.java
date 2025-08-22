@@ -1,8 +1,8 @@
 package com.likelion.cleopatra.domain.report.entity;
 
 import com.likelion.cleopatra.domain.member.entity.Member;
+import com.likelion.cleopatra.domain.population.dto.PopulationRes;
 import com.likelion.cleopatra.domain.report.dto.income.IncomeRes;
-import com.likelion.cleopatra.domain.report.dto.population.PopulationRes;
 import com.likelion.cleopatra.domain.report.dto.price.PriceRes;
 import com.likelion.cleopatra.global.common.enums.address.District;
 import com.likelion.cleopatra.global.common.enums.address.Neighborhood;

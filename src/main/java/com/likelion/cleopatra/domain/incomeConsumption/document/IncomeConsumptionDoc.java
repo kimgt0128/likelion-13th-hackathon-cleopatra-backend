@@ -1,5 +1,5 @@
-// src/main/java/com/likelion/cleopatra/domain/income/document/IncomeDoc.java
-package com.likelion.cleopatra.domain.income.document;
+// src/main/java/com/likelion/cleopatra/domain/incomeConsumption/document/IncomeDoc.java
+package com.likelion.cleopatra.domain.incomeConsumption.document;
 
 import lombok.*;
 import org.springframework.data.annotation.Id;
@@ -10,8 +10,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.math.BigDecimal;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-@Document("income")
-public class IncomeDoc {
+@Document("incomeConsumption")
+public class IncomeConsumptionDoc {
     @Id private String id;
 
     @Indexed private int period;          // 20251

@@ -10,22 +10,6 @@ public class Ages {
     private List<Long> resident;  // [10,20,30,40,50,60+ 순]
     private List<Double> percent; // [10,20,30,40,50,60+ 순]
 
-    // Resident
-    private long age10Resident;
-    private long age20Resident;
-    private long age30Resident;
-    private long age40Resident;
-    private long age50Resident;
-    private long age60PlusResident;
-
-    // Percent
-    private double age10Percent;
-    private double age20Percent;
-    private double age30Percent;
-    private double age40Percent;
-    private double age50Percent;
-    private double age60PlusPercent;
-
     public static Ages from(PopulationDoc doc) {
         long total = doc.getTotalResident();
         long a10 = doc.getAge10Resident();
@@ -45,10 +29,6 @@ public class Ages {
         return Ages.builder()
                 .resident(List.of(a10, a20, a30, a40, a50, a60))
                 .percent(List.of(p10, p20, p30, p40, p50, p60))
-                .age10Resident(a10).age20Resident(a20).age30Resident(a30)
-                .age40Resident(a40).age50Resident(a50).age60PlusResident(a60)
-                .age10Percent(p10).age20Percent(p20).age30Percent(p30)
-                .age40Percent(p40).age50Percent(p50).age60PlusPercent(p60)
                 .build();
     }
 

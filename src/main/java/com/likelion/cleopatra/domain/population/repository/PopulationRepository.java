@@ -5,8 +5,6 @@ import com.likelion.cleopatra.domain.population.document.PopulationDoc;
 import java.util.Optional;
 
 public interface PopulationRepository extends org.springframework.data.mongodb.repository.MongoRepository<PopulationDoc,String>{
-    Optional<PopulationDoc> findByAdstrdCodeAndPeriod(String code, int period);
-    Optional<PopulationDoc> findByAdstrdCode(String code);
     Optional<PopulationDoc> findByAdstrdName(String name);
 
 }

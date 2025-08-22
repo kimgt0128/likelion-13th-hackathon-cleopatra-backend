@@ -3,7 +3,7 @@ package com.likelion.cleopatra.domain.population.service;
 import com.likelion.cleopatra.domain.population.document.PopulationDoc;
 import com.likelion.cleopatra.domain.population.dto.PopulationRes;
 import com.likelion.cleopatra.domain.population.dto.age.Ages;
-import com.likelion.cleopatra.domain.population.dto.description.Description;
+import com.likelion.cleopatra.domain.population.dto.description.DescriptionPopulation;
 import com.likelion.cleopatra.domain.population.dto.gender.Gender;
 import com.likelion.cleopatra.domain.population.repository.PopulationRepository;
 import com.likelion.cleopatra.domain.report.dto.ReportReq;
@@ -23,7 +23,7 @@ public class PopulationService {
 
         Ages ages = Ages.from(doc);
         Gender gender = Gender.from(doc);
-        Description description = null;
+        DescriptionPopulation description = null;
         return PopulationRes.from(ages, gender, description);
     }
 
