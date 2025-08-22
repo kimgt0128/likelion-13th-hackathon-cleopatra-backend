@@ -2,10 +2,11 @@
 package com.likelion.cleopatra.domain.report.service;
 
 import com.likelion.cleopatra.domain.openApi.rtms.service.RtmsService;
+import com.likelion.cleopatra.domain.population.dto.PopulationRes;
+import com.likelion.cleopatra.domain.population.service.PopulationService;
 import com.likelion.cleopatra.domain.report.dto.ReportReq;
 import com.likelion.cleopatra.domain.report.dto.ReportRes;
 import com.likelion.cleopatra.domain.report.dto.income.IncomeRes;
-import com.likelion.cleopatra.domain.report.dto.population.PopulationRes;
 import com.likelion.cleopatra.domain.report.dto.price.PriceRes;
 import com.likelion.cleopatra.domain.report.entity.Report;
 import com.likelion.cleopatra.domain.report.repository.ReportRepository;
@@ -20,7 +21,9 @@ import java.time.YearMonth;
 public class ReportService {
 
     private final ReportRepository repository;
+    private final PopulationService populationService;
     private final RtmsService rtmsService;
+
 
 
 
@@ -33,12 +36,10 @@ public class ReportService {
 
     }
 
-    private IncomeRes getIncomeRes(ReportReq req) {
-        return null;
-    }
+
 
     private PopulationRes getPopulationRes(ReportReq req) {
-        return  null;
+        return  populationService.getPopulationData(req);
     }
 
     private PriceRes getPriceRes(ReportReq req) {
@@ -47,5 +48,9 @@ public class ReportService {
 
         YearMonth anchor = YearMonth.of(2025, 6); // 기본: 2024-07~2025-06
         return rtmsService.buildPriceRes(lawdCd, anchor, dong);
+    }
+
+    private IncomeRes getIncomeRes(ReportReq req) {
+        return null;
     }
 }

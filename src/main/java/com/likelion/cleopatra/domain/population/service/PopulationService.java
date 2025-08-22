@@ -16,7 +16,7 @@ public class PopulationService {
 
     private final PopulationRepository populationRepository;
 
-    PopulationRes getPopulationData(ReportReq req) {
+    public PopulationRes getPopulationData(ReportReq req) {
 
         PopulationDoc doc = populationRepository.findByAdstrdName(req.getSub_neighborhood())
                 .orElseThrow(() -> new IllegalArgumentException("population not found: " + req.getSub_neighborhood()));
