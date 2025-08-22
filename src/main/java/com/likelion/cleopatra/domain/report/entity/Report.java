@@ -1,8 +1,8 @@
 package com.likelion.cleopatra.domain.report.entity;
 
+import com.likelion.cleopatra.domain.incomeConsumption.dto.IncomeConsumptionRes;
 import com.likelion.cleopatra.domain.member.entity.Member;
 import com.likelion.cleopatra.domain.population.dto.PopulationRes;
-import com.likelion.cleopatra.domain.report.dto.income.IncomeRes;
 import com.likelion.cleopatra.domain.report.dto.price.PriceRes;
 import com.likelion.cleopatra.global.common.enums.address.District;
 import com.likelion.cleopatra.global.common.enums.address.Neighborhood;
@@ -81,7 +81,7 @@ public class Report {
     @Column(name = "description3", length = 600)
     private String description3;
 
-    public static Report create(PopulationRes populationRes, PriceRes priceRes, IncomeRes incomeRes) {
+    public static Report create(PopulationRes populationRes, PriceRes priceRes, IncomeConsumptionRes incomeRes) {
         return Report.builder().build();
     }
 

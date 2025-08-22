@@ -1,5 +1,7 @@
-// src/main/java/com/likelion/cleopatra/global/geo/LawdCodeResolver.java
 package com.likelion.cleopatra.global.geo;
+
+import com.likelion.cleopatra.global.common.enums.address.District;
+import com.likelion.cleopatra.global.common.enums.address.Neighborhood;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,17 +27,19 @@ public final class LawdCodeResolver {
         put("강동구","11740");
     }
 
-    public static String resolveGuCode5(String district){
-        String code = GU.get(norm(district));
+    /** enum 기반 조회 */
+    public static String resolveGuCode5(District district){
+        String code = GU.get(district);
         if (code == null) throw new IllegalArgumentException("자치구 미지원: " + district);
         return code;
     }
 
-    /** 동명 우선순위: sub_neighborhood → neighborhood. 반환은 법정동 형태로 정규화. */
-    public static String pickDongOrThrow(String neighborhood, String subNeighborhood){
-        String d = isBlank(subNeighborhood) ? neighborhood : subNeighborhood;
-        if (isBlank(d)) throw new IllegalArgumentException("동명이 필요합니다.");
-        return toBeopjeongDong(d);
+    /** enum + 서브동 문자열 → 법정동 정규화 */
+    public static String pickDongOrThrow(Neighborhood neighborhood, String subNeighborhood){
+        String base = (subNeighborhood != null && !subNeighborhood.isBlank())
+                ? subNeighborhood
+                : neighborhood.toJson();   // enum이 getKo()면 neighborhood.getKo()로 교체
+        return toBeopjeongDong(base);
     }
 
     /** "공릉 1동" → "공릉동" 정규화. */

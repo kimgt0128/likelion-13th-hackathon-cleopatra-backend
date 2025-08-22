@@ -32,7 +32,7 @@ public class ReportService {
         PopulationRes populationRes = getPopulationRes(req);
         PriceRes priceRes = getPriceRes(req);
         IncomeConsumptionRes incomeConsumptionRes = getIncomeConsumptionRes(req);
-        Report report = Report.create(populationRes, priceRes, incomeRes);
+        Report report = Report.create(populationRes, priceRes, incomeConsumptionRes);
         return ReportRes.from(report);
 
     }
@@ -51,7 +51,7 @@ public class ReportService {
         return rtmsService.buildPriceRes(lawdCd, anchor, dong);
     }
 
-    private IncomeConsumptionRes getIncomeRes(ReportReq req) {
+    private IncomeConsumptionRes getIncomeConsumptionRes(ReportReq req) {
         return incomeConsumptionService.getIncomeConsumptionData(req);
     }
 }
