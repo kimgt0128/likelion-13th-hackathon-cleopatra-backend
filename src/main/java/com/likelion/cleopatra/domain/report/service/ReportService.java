@@ -1,12 +1,12 @@
-// src/main/java/com/likelion/cleopatra/domain/report/service/ReportService.java
 package com.likelion.cleopatra.domain.report.service;
 
+import com.likelion.cleopatra.domain.incomeConsumption.dto.IncomeConsumptionRes;
+import com.likelion.cleopatra.domain.incomeConsumption.service.IncomeConsumptionService;
 import com.likelion.cleopatra.domain.openApi.rtms.service.RtmsService;
 import com.likelion.cleopatra.domain.population.dto.PopulationRes;
 import com.likelion.cleopatra.domain.population.service.PopulationService;
 import com.likelion.cleopatra.domain.report.dto.ReportReq;
 import com.likelion.cleopatra.domain.report.dto.ReportRes;
-import com.likelion.cleopatra.domain.report.dto.income.IncomeRes;
 import com.likelion.cleopatra.domain.report.dto.price.PriceRes;
 import com.likelion.cleopatra.domain.report.entity.Report;
 import com.likelion.cleopatra.domain.report.repository.ReportRepository;
@@ -23,6 +23,7 @@ public class ReportService {
     private final ReportRepository repository;
     private final PopulationService populationService;
     private final RtmsService rtmsService;
+    private final IncomeConsumptionService incomeConsumptionService;
 
 
 
@@ -30,7 +31,7 @@ public class ReportService {
     public ReportRes create(ReportReq req) {
         PopulationRes populationRes = getPopulationRes(req);
         PriceRes priceRes = getPriceRes(req);
-        IncomeRes incomeRes = getIncomeRes(req);
+        IncomeConsumptionRes incomeConsumptionRes = getIncomeConsumptionRes(req);
         Report report = Report.create(populationRes, priceRes, incomeRes);
         return ReportRes.from(report);
 
@@ -50,7 +51,7 @@ public class ReportService {
         return rtmsService.buildPriceRes(lawdCd, anchor, dong);
     }
 
-    private IncomeRes getIncomeRes(ReportReq req) {
-        return null;
+    private IncomeConsumptionRes getIncomeRes(ReportReq req) {
+        return incomeConsumptionService.getIncomeConsumptionData(req);
     }
 }
