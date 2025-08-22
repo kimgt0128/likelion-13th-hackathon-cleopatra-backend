@@ -28,7 +28,7 @@ public class ReportService {
 
 
 
-    public ReportRes create(ReportReq req) {
+    public ReportRes create(String primaryKey, ReportReq req) {
         PopulationRes populationRes = getPopulationRes(req);
         PriceRes priceRes = getPriceRes(req);
         IncomeConsumptionRes incomeConsumptionRes = getIncomeConsumptionRes(req);
