@@ -28,8 +28,6 @@ public class ReportService {
         PopulationRes populationRes = getPopulationRes(req);
         PriceRes priceRes = getPriceRes(req);
         IncomeRes incomeRes = getIncomeRes(req);
-        //PopulationRes로 인구수 가져오기
-        // IncomRes로 소득소비 가져오기
         Report report = Report.create(populationRes, priceRes, incomeRes);
         return ReportRes.from(report);
 
