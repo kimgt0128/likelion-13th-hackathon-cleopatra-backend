@@ -55,7 +55,6 @@ public class ReportService {
         ReportDescription reportDescription = descriptionService.getDescription(reportData);
         TotalReportRes totalReportRes = TotalReportRes.from(reportData, reportDescription);
 
-        // 근데 이럴거면 차라리 pop, pri, inc을 하나로 묶고, description으로 총 두개의 인자만 넣는게 깔끔하지 않나?
         Report report = Report.create(member, req, totalReportRes, objectMapper);
 
         long ms = (System.nanoTime() - t0) / 1_000_000;
