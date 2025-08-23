@@ -74,11 +74,6 @@ public class Report {
     @Column(columnDefinition = "json", nullable = true)
     private String descriptionStrategyJson;  // $.description_strategy
 
-    // 요약 컬럼(선택): 목록 정렬/필터용
-    private Long   totalResident;                 // from population
-    private Double pricePerPyeong;                // from price
-    @Column(precision = 15, scale = 2)
-    private BigDecimal monthlyIncomeAvg;          // from income
 
     /** 팩토리: 데이터 묶음 + 설명 묶음 → 섹션별 JSON 저장 */
     public static Report create(Member member,
@@ -86,7 +81,10 @@ public class Report {
                                 TotalReportRes total,
                                 ObjectMapper om) {
         return Report.builder()
+                // Member
                 .member(member)
+
+                // 기본 필드
                 .primary(req.getPrimary())
                 .secondary(req.getSecondary())
                 .district(req.getDistrict())
@@ -94,6 +92,7 @@ public class Report {
                 .subNeighborhood(req.getSub_neighborhood())
                 .createdAt(LocalDateTime.now())
 
+                // 섹터별 Json 형식
                 .descriptionSummaryJson(write(om, total.getDescriptionSummary()))
                 .keywordsJson(write(om, total.getKeywords()))
                 .populationJson(write(om, total.getPopulation()))
@@ -101,9 +100,6 @@ public class Report {
                 .incomeConsumptionJson(write(om, total.getIncomeConsumption()))
                 .descriptionStrategyJson(write(om, total.getDescriptionStrategy()))
 
-                .totalResident(safe(() -> total.getPopulation().getTotalResident()))
-                .pricePerPyeong(safe(() -> total.getPrice().getPricePerPyeong()))
-                .monthlyIncomeAvg(safe(() -> total.getIncomeConsumption().getIncome().getMonthlyIncomeAverage()))
                 .build();
     }
 
