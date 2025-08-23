@@ -5,12 +5,13 @@ import com.likelion.cleopatra.domain.aiDescription.DescriptionService;
 import com.likelion.cleopatra.domain.aiDescription.dto.ReportDescription;
 import com.likelion.cleopatra.domain.incomeConsumption.dto.IncomeConsumptionRes;
 import com.likelion.cleopatra.domain.incomeConsumption.service.IncomeConsumptionService;
+import com.likelion.cleopatra.domain.keywordData.dto.report.KeywordReportRes;
+import com.likelion.cleopatra.domain.keywordData.service.KeywordService;
 import com.likelion.cleopatra.domain.member.entity.Member;
 import com.likelion.cleopatra.domain.member.repository.MemberRepository;
 import com.likelion.cleopatra.domain.openApi.rtms.service.RtmsService;
 import com.likelion.cleopatra.domain.population.dto.PopulationRes;
 import com.likelion.cleopatra.domain.population.service.PopulationService;
-import com.likelion.cleopatra.domain.report.dto.keyword.KeywordEntry;
 import com.likelion.cleopatra.domain.report.dto.report.TotalReportRes;
 import com.likelion.cleopatra.domain.report.dto.report.ReportData;
 import com.likelion.cleopatra.domain.report.dto.report.ReportReq;
@@ -24,7 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.YearMonth;
-import java.util.List;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -33,6 +33,7 @@ public class ReportService {
 
     private final MemberRepository memberRepository;
     private final ReportRepository reportRepository;
+    private final KeywordService keywordsService;
     private final PopulationService populationService;
     private final RtmsService rtmsService;
     private final IncomeConsumptionService incomeConsumptionService;
@@ -46,9 +47,11 @@ public class ReportService {
                 .orElseThrow(() -> new IllegalArgumentException("member not found: " + primaryKey));
 
         ReportData reportData = preprocess(req);
+        // 여기서부터 keyword를 포함하여 다시 응답 가져오도록
         ReportDescription reportDescription = descriptionService.getDescription(reportData);
         TotalReportRes totalReportRes = TotalReportRes.from(reportData, reportDescription);
 
+        // 이후
         Report report = Report.create(member, req, totalReportRes, objectMapper);
 
         return ReportRes.from(reportRepository.save(report));
@@ -60,7 +63,7 @@ public class ReportService {
     private ReportData preprocess(ReportReq req) {
 
         // 키워드는 상황에 따라 채움(없으면 null/빈 리스트) -> 구현 예정
-        List<KeywordEntry> keywords = java.util.Collections.emptyList();
+        KeywordReportRes keywordsReportRes = keywordsService.getExtractedKeyword(req);
 
         PopulationRes populationRes = populationService.getPopulationData(req);
 
@@ -71,6 +74,6 @@ public class ReportService {
 
         IncomeConsumptionRes incomeConsumptionRes = incomeConsumptionService.getIncomeConsumptionData(req);
 
-        return ReportData.of(populationRes, priceRes, incomeConsumptionRes, keywords);
+        return ReportData.of(keywordsReportRes, populationRes, priceRes, incomeConsumptionRes);
     }
 }

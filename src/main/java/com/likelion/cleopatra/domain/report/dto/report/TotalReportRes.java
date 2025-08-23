@@ -1,10 +1,9 @@
-// src/main/java/com/likelion/cleopatra/domain/report/dto/report/TotalReportRes.java
 package com.likelion.cleopatra.domain.report.dto.report;
 
 import com.likelion.cleopatra.domain.aiDescription.dto.ReportDescription;
 import com.likelion.cleopatra.domain.incomeConsumption.dto.IncomeConsumptionRes;
+import com.likelion.cleopatra.domain.keywordData.dto.report.KeywordReportRes;
 import com.likelion.cleopatra.domain.population.dto.PopulationRes;
-import com.likelion.cleopatra.domain.report.dto.keyword.KeywordEntry;
 import com.likelion.cleopatra.domain.report.dto.price.PriceRes;
 import lombok.*;
 
@@ -13,7 +12,7 @@ import lombok.*;
 public class TotalReportRes {
 
     // 데이터 섹션
-    private java.util.List<KeywordEntry> keywords;
+    private KeywordReportRes keywordReportRes;
     private PopulationRes population;
     private PriceRes price;
     private IncomeConsumptionRes incomeConsumption;
@@ -27,7 +26,7 @@ public class TotalReportRes {
 
     public static TotalReportRes from(ReportData data, ReportDescription desc) {
         return TotalReportRes.builder()
-                .keywords(data.getKeywords())
+                .keywordReportRes(data.getKeywordReportRes())
                 .population(data.getPopulationRes())
                 .price(data.getPriceRes())
                 .incomeConsumption(data.getIncomeConsumptionRes())

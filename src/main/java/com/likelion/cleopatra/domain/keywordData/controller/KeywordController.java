@@ -2,7 +2,7 @@ package com.likelion.cleopatra.domain.keywordData.controller;
 
 import com.likelion.cleopatra.domain.keywordData.dto.KeywordExtractReq;
 import com.likelion.cleopatra.domain.keywordData.dto.KeywordExtractRes;
-import com.likelion.cleopatra.domain.keywordData.service.KeywordService;
+import com.likelion.cleopatra.domain.keywordData.service.KeywordExtractService;
 import com.likelion.cleopatra.global.exception.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/keyword")
 public class KeywordController {
 
-    private final KeywordService keywordService;
+    private final KeywordExtractService keywordService;
 
     @PostMapping("/extract")
     @Operation(
