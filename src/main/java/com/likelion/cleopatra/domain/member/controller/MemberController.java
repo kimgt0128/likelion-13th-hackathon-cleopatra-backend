@@ -20,8 +20,7 @@ public class MemberController {
             description = "경로 변수로 primary_key를 받아 멤버를 생성합니다.\n예) POST /api/member/{primary_key}"
     )
     ApiResponse<?> create(@PathVariable("primary_key") String primaryKey) {
-        memberService.findOrCreate(primaryKey);
-        return ApiResponse.success(null);
+        return ApiResponse.success(memberService.findOrCreate(primaryKey), "Member 생성 성공.");
     }
 
 }
