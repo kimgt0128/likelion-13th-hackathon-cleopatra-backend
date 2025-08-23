@@ -57,6 +57,9 @@ dependencies {
 
     // Crawling
     implementation "com.microsoft.playwright:playwright:1.46.0"
+
+    // AOP
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
 }
 
 tasks.named('test') {
