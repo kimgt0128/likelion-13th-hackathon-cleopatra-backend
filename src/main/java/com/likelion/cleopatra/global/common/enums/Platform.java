@@ -12,7 +12,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
                 "NAVER_PLACE",
                 "KAKAO",
                 "INSTAGRAM",
-                "BAEMIN"
+                "BAEMIN",
+                "YOUTUBE"
         }
 )
 public enum Platform {
@@ -20,5 +21,6 @@ public enum Platform {
     NAVER_PLACE,
     KAKAO,
     INSTAGRAM,
+    YOUTUBE,
     BAEMIN
 }

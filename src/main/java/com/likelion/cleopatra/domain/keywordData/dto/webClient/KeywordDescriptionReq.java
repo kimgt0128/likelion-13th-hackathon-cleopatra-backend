@@ -1,4 +1,4 @@
-package com.likelion.cleopatra.domain.keywordData.dto;
+package com.likelion.cleopatra.domain.keywordData.dto.webClient;
 
 import lombok.*;
 

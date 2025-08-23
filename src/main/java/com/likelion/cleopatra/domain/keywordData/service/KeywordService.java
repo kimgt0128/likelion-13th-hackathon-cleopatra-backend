@@ -1,83 +1,111 @@
 package com.likelion.cleopatra.domain.keywordData.service;
 
 import com.likelion.cleopatra.domain.collect.repository.ContentRepository;
+import com.likelion.cleopatra.domain.crwal.document.ContentDoc;
+import com.likelion.cleopatra.domain.keywordData.document.KeywordDoc;
+import com.likelion.cleopatra.domain.keywordData.dto.KeywordExtractRes;
+import com.likelion.cleopatra.domain.keywordData.dto.webClient.KeywordDescriptionReq;
+import com.likelion.cleopatra.domain.keywordData.dto.webClient.KeywordDescriptionRes;
 import com.likelion.cleopatra.domain.keywordData.repository.KeywordRepository;
-import lombok.RequiredArgsConstructor;
+import com.likelion.cleopatra.global.common.enums.Platform;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Service
 public class KeywordService {
 
-    // ContentRepository도 생성자로 주입받긴해야할듯?
-    private ContentRepository contentRepository;
-    private final WebClient webClient;
+    private final ContentRepository contentRepository;
+    private final KeywordRepository keywordRepository;
+    private final WebClient webClient; // @Qualifier 필요
 
-    public KeywordService(@Qualifier("keywordWebClient") WebClient webClient) {
+    public KeywordService(ContentRepository contentRepository,
+                          KeywordRepository keywordRepository,
+                          @Qualifier("keywordWebClient") WebClient webClient) {
+        this.contentRepository = contentRepository;
+        this.keywordRepository = keywordRepository;
         this.webClient = webClient;
     }
-
     /**
-     * 쿼리에 대한 Content를 모두 찾아서 플랫폼별(NAVER_BLOG, NAVER_PLACE, YOUTUE)로 다음형태로 만들어 요청
-     * {
-     * 	"areaa": "노원구 공릉동",
-     * 	"keyword": "외식업 일식",
-     * 	"data": [
-     * 		"data_naver_blog": [
-     * 		            {
-     * 		    "doc_id": "nb1",
-     * 		    "platform": "NAVER_BLOG",
-     * 		    "text": "면이 되게 쫄깃하고 맛있어요!!! 면 양을 조절할수도있고 양도 많아요😊 ..."
-     *          },
-     *          {
-     * 		    "doc_id": "nb2",
-     * 		    "platform": "baemin",
-     * 		    "text": "저녁에 방문... 시그니처 메뉴 💓 특히 치즈얹은 밥이랑 카레 조합은 정말 최고였어요..."
-     *          },
-     *          {
-     * 		    "doc_id": "nb3",
-     * 		    "platform": "baemin",
-     * 		    "text": "점심에 방문... 주문하자마자 나오는 속도도 청결도 모든게 다 만족했습니다 >< 또 올거예요."
-     *          },
-     * 		  ... 네이버 블로그 30개
-     * 		],
-     * 	 "data_naver_palce": [      * 	  {
-     * 	    "doc_id": "np1",
-     * 	    "platform": "NAVER_PLACE",
-     * 	    "text": "가성비 좋은 메뉴가 많고 양도 푸짐합니다. 특히 김치찌개가 진하고 맛있었어요."
-     *      },
-     *      {
-     * 	    "doc_id": "np2",
-     * 	    "platform": "NAVER_PLACE",
-     * 	    "text": "매장이 깔끔하고 분위기도 좋아서 친구랑 오기 딱 좋네요. 다만 저녁에는 조금 시끄러워요."
-     *      },
-     * 	  ... 네이버 플레이스 30개
-     *   ],
-     *   "data_youtube": [
-     *      {
-     * 	    "doc_id": "yt1",
-     * 	    "platform": "YOUTUBE",
-     * 	    "text": "오늘은 공릉역에 있는 초밥 맛집에 다녀왔습니다 ~~ 이렇게 역 바로앞에 있어서~~"
-     *      },
-     *      {
-     * 	    "doc_id": "yt1",
-     * 	    "platform": "YOUTUBE",
-     * 	    "text": "오늘은 공릉역에 있는 초밥 맛집에 다녀왔습니다 ~~ 이렇게 역 바로앞에 있어서~~"
-     *      },
-     *      {
-     * 	    "doc_id": "yt2",
-     * 	    "platform": "YOUTUBE",
-     * 	    "text": "오늘은 공릉역에 있는 초밥 맛집에 다녀왔습니다 ~~ 이렇게 역 바로앞에 있어서~~"
-     *      },
-     * 	  ... 유튜브 30개
-     * 	]
-     * }
-     * @param query
-     * @return
+     * area + query로 콘텐츠를 모아 AI에 전달하고 결과를 저장.
      */
-    public KeywordDescriptionRes getDescription(String query) {
-        // 이 키워드는 검색 쿼리임("공릉 일식")
-        contentRepository.findByKeyword(query);
+    public KeywordExtractRes analyzeAndSave(String area, String query) {
+        // 1) 수집물 모으기(최대 30개씩)
+        List<ContentDoc> blogs  = contentRepository.findTop30ByPlatformAndKeywordOrderByCrawledAtDesc(Platform.NAVER_BLOG,  query);
+        List<ContentDoc> places = contentRepository.findTop30ByPlatformAndKeywordOrderByCrawledAtDesc(Platform.NAVER_PLACE, query);
+        List<ContentDoc> yt     = contentRepository.findTop30ByPlatformAndKeywordOrderByCrawledAtDesc(Platform.YOUTUBE,    query);
+
+        // 2) 요청 DTO 구성 (키 이름은 요구 사양 유지)
+        Map<String, List<KeywordDescriptionReq.Snippet>> data = new LinkedHashMap<>();
+        data.put("data_naver_blog",  toSnippets(blogs));
+        data.put("data_naver_palce", toSnippets(places)); // 요구 사양 철자 유지
+        data.put("data_youtube",     toSnippets(yt));
+
+        KeywordDescriptionReq req = KeywordDescriptionReq.builder()
+                .areaa(area)        // 요구 사양 필드명 유지
+                .keyword(query)
+                .data(data)
+                .build();
+
+        // 3) AI 호출 (POST /alalyze)
+        KeywordDescriptionRes res = webClient.post()
+                .uri("/alalyze")
+                .bodyValue(req)
+                .retrieve()
+                .bodyToMono(KeywordDescriptionRes.class)
+                .block();
+
+        // 4) 응답 → KeywordDoc 저장
+        KeywordDoc doc = mapToDoc(query, res);
+        keywordRepository.save(doc);
+
+        return KeywordExtractRes.of(
+                area, query, doc,
+                blogs == null ? 0 : blogs.size(),
+                places == null ? 0 : places.size(),
+                yt == null ? 0 : yt.size()
+        );
+    }
+
+    private List<KeywordDescriptionReq.Snippet> toSnippets(List<ContentDoc> list) {
+        if (list == null) return List.of();
+        return list.stream()
+                .map(c -> KeywordDescriptionReq.Snippet.builder()
+                        .doc_id(c.getId())
+                        .platform(c.getPlatform() == null ? null : c.getPlatform().name())
+                        .text(c.getContentText())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    private KeywordDoc mapToDoc(String query, KeywordDescriptionRes res) {
+        List<KeywordDoc.PlatformKeywords> items = new ArrayList<>();
+        if (res != null && res.getData() != null) {
+            for (KeywordDescriptionRes.PlatformBlock b : res.getData().values()) {
+                Platform p = safePlatform(b.getPlatform());
+                if (p == null) continue;
+                items.add(KeywordDoc.PlatformKeywords.builder()
+                        .platform(p)
+                        .keywords(b.getPlatform_keyword())
+                        .descript(b.getPlatform_description())
+                        .build());
+            }
+        }
+        return KeywordDoc.builder()
+                .keyword(query)
+                .keywords(items)
+                .build();
+    }
+
+    private Platform safePlatform(String s) {
+        if (s == null) return null;
+        try { return Platform.valueOf(s.trim().toUpperCase()); }
+        catch (Exception e) { return null; }
     }
 }
