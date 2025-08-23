@@ -92,4 +92,9 @@ public class WebClientConfig {
         return WebClient.builder().baseUrl("http://localhost:8000/api/ai").build();
 
     }
+
+    @Bean(name = "keywordWebClient")
+    public WebClient keywordWebClient() {
+    여기도 채워주세요 요청은, localhost:8000/api/ai/alalyze
+    }
 }
