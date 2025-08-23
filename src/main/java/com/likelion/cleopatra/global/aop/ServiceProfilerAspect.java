@@ -1,4 +1,4 @@
-package com.likelion.cleopatra.global.config.aop;
+package com.likelion.cleopatra.global.aop;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;

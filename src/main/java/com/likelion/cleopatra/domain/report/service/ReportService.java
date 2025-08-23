@@ -32,7 +32,7 @@ import java.util.List;
 public class ReportService {
 
     private final MemberRepository memberRepository;
-    private final ReportRepository repository;
+    private final ReportRepository reportRepository;
     private final PopulationService populationService;
     private final RtmsService rtmsService;
     private final IncomeConsumptionService incomeConsumptionService;
@@ -41,15 +41,9 @@ public class ReportService {
 
 
     public ReportRes create(String primaryKey, ReportReq req) {
-        long t0 = System.nanoTime();
 
         Member member = memberRepository.findByPrimaryKey(primaryKey)
                 .orElseThrow(() -> new IllegalArgumentException("member not found: " + primaryKey));
-
-        log.debug("[REPORT] create start primaryKey={} district={} neighborhood={} subNeighborhood={} secondary={} anchor=2025-06",
-                primaryKey, req.getDistrict(), req.getNeighborhood(), req.getSub_neighborhood(), req.getSecondary());
-
-
 
         ReportData reportData = preprocess(req);
         ReportDescription reportDescription = descriptionService.getDescription(reportData);
@@ -57,16 +51,16 @@ public class ReportService {
 
         Report report = Report.create(member, req, totalReportRes, objectMapper);
 
-        long ms = (System.nanoTime() - t0) / 1_000_000;
-        log.debug("[REPORT] report created in {} ms", ms);
-        return ReportRes.from(report);
+        return ReportRes.from(reportRepository.save(report));
     }
 
 
     /** ----------helper **/
-
     // ReportReq로부터 {PopulationRes, PriceRes, IncomeConsumptionRes}로 가공해주는 함수. 이후에 ai한테 넘겨서 전체 설명을 포함한 TotalReportRes로 만든다.
     private ReportData preprocess(ReportReq req) {
+
+        // 키워드는 상황에 따라 채움(없으면 null/빈 리스트) -> 구현 예정
+        List<KeywordEntry> keywords = java.util.Collections.emptyList();
 
         PopulationRes populationRes = populationService.getPopulationData(req);
 
@@ -76,10 +70,6 @@ public class ReportService {
         PriceRes priceRes = rtmsService.buildPriceRes(lawdCd, anchor, dong);
 
         IncomeConsumptionRes incomeConsumptionRes = incomeConsumptionService.getIncomeConsumptionData(req);
-
-
-        // 키워드는 상황에 따라 채움(없으면 null/빈 리스트) -> 구현 예정
-        List<KeywordEntry> keywords = java.util.Collections.emptyList();
 
         return ReportData.of(populationRes, priceRes, incomeConsumptionRes, keywords);
     }
