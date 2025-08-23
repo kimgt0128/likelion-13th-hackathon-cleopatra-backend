@@ -1,6 +1,10 @@
 package com.likelion.cleopatra.domain.keywordData.document;
 
 import com.likelion.cleopatra.global.common.enums.Platform;
+import com.likelion.cleopatra.global.common.enums.address.District;
+import com.likelion.cleopatra.global.common.enums.address.Neighborhood;
+import com.likelion.cleopatra.global.common.enums.keyword.Primary;
+import com.likelion.cleopatra.global.common.enums.keyword.Secondary;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -21,17 +25,12 @@ public class KeywordDoc {
     /** 수집 기준 키(예: 검색어) */
     private String keyword;
 
-    /** 플랫폼별 키워드/해설 */
-    private List<PlatformKeywords> keywords;
+    private District district;
+    private Neighborhood neighborhood;
+    private Primary primary;
+    private Secondary secondary;
+    private Platform platform;
+    private List<String> keywords;
+    private String descript;
 
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class PlatformKeywords {
-        private Platform platform;      // NAVER_BLOG, NAVER_REVIEW, YOUTUBE
-        private List<String> keywords;  // ["중고 거래", "과제", "직거래"]
-        private String descript;        // 간단 해설
-    }
 }
