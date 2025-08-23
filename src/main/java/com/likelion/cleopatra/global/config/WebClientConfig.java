@@ -6,8 +6,13 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
+import org.springframework.web.reactive.function.client.ClientRequest;
+import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.http.HttpHeaders;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import java.net.URI;
 
 /**
  * WebClientConfig
@@ -27,6 +32,13 @@ public class WebClientConfig {
     private String naverClientId;
     @Value("${service.naver.client-secret}")
     private String naverClientSecret;
+
+    @Value("${service.rtms.url}")
+    private String rtmsBaseUrl;
+
+    @Value("${service.rtms.service-key}")
+    private String rtmsSecret;
+
 
     //private ApiInfo naver = new ApiInfo(naverBaseUrl, naverClientId, naverClientSecret);
 
@@ -51,5 +63,33 @@ public class WebClientConfig {
                 .defaultHeader("X-Naver-Client-Id", naverClientId)
                 .defaultHeader("X-Naver-Client-Secret", naverClientSecret)
                 .build();
+    }
+
+    // 신규: 국토부 실거래가(RTMS) 호출용
+    @Bean(name = "rtmsWebClient")
+    public WebClient rtmsWebClient() {
+        ExchangeFilterFunction addServiceKey = (request, next) -> {
+            URI uri = request.url();
+            UriComponentsBuilder b = UriComponentsBuilder.fromUri(uri);
+            if (!b.build().getQueryParams().containsKey("serviceKey")) {
+                b.queryParam("serviceKey", rtmsSecret);
+            }
+            ClientRequest newReq = ClientRequest.from(request)
+                    .url(b.build(true).toUri()) // 인코딩 안전
+                    .build();
+            return next.exchange(newReq);
+        };
+
+        return WebClient.builder()
+                .baseUrl(rtmsBaseUrl) // 예: https://apis.data.go.kr/1613000/RTMSDataSvcNrgTrade/getRTMSDataSvcNrgTrade
+                .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_XML_VALUE)
+                .filter(addServiceKey)
+                .build();
+    }
+
+    @Bean(name = "descriptionWebClient")
+    public WebClient desCriptionWebClient() {
+        return WebClient.builder().baseUrl("http://localhost:8000/api/ai").build();
+
     }
 }
