@@ -1,19 +1,47 @@
+// src/main/java/com/likelion/cleopatra/domain/aiDescription/DescriptionService.java
 package com.likelion.cleopatra.domain.aiDescription;
 
-import com.likelion.cleopatra.domain.incomeConsumption.dto.IncomeConsumptionRes;
-import com.likelion.cleopatra.domain.population.dto.PopulationRes;
-import com.likelion.cleopatra.domain.aiDescription.dto.ReportDescriptionRes;
-import com.likelion.cleopatra.domain.report.dto.price.PriceRes;
-import com.likelion.cleopatra.domain.report.dto.report.ReportReq;
+import com.likelion.cleopatra.domain.aiDescription.dto.ReportDescription;
+import com.likelion.cleopatra.domain.report.dto.report.ReportData;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
+
+/**
+ * - WebClient로 AI 서비스 호출해 ReportDescription 수신.
+ * - 실패 시 기본 문구로 폴백.
+ */
 
 @Service
 public class DescriptionService {
 
-    // webClientConfig에서 가져오기 설정
+    private final WebClient webClient;
 
-    public ReportDescriptionRes getDescription(ReportReq req, PopulationRes populationRes, PriceRes priceRes, IncomeConsumptionRes incomeConsumptionRes) {
-        return webClient.get()
-                //이 설명은 ai가 주는거라 받아 쓰면될듯
+    public DescriptionService(@Qualifier("descriptionWebClient") WebClient webClient) {
+        this.webClient = webClient;
+    }
+
+    public ReportDescription getDescription(ReportData data) {
+        // TODO: 실제 엔드포인트/요청스키마에 맞게 body 변환
+        try {
+            return webClient.post()
+                    .uri("/strategy")
+                    .bodyValue(data) // 필요 시 별도 요청 DTO로 매핑
+                    .retrieve()
+                    .bodyToMono(ReportDescription.class)
+                    .block();
+        } catch (Exception e) {
+            return fallback();
+        }
+    }
+
+    private ReportDescription fallback() {
+        return ReportDescription.builder()
+                .descriptionSummary(ReportDescription.DescriptionSummary.builder()
+                        .totalDescription("데이터 기반 요약 생성 실패. 기본 설명을 제공합니다.")
+                        .build())
+                .incomeConsumptionDescription("생성 실패. 기본 설명.")
+                .build();
     }
 }

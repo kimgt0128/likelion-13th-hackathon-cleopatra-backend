@@ -13,8 +13,9 @@ public class MemberService {
     private final MemberRepository memberRepository;
 
     @Transactional
-    public void create(String primaryKey) {
+    public void findOrCreate(String primaryKey) {
         memberRepository.findByPrimaryKey(primaryKey)
                 .orElseGet(() -> memberRepository.save(Member.create(primaryKey)));
     }
+
 }

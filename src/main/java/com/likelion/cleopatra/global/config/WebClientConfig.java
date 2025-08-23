@@ -86,4 +86,10 @@ public class WebClientConfig {
                 .filter(addServiceKey)
                 .build();
     }
+
+    @Bean(name = "descriptionWebClient")
+    public WebClient desCriptionWebClient() {
+        return WebClient.builder().baseUrl("http://localhost:8000/api/ai").build();
+
+    }
 }
