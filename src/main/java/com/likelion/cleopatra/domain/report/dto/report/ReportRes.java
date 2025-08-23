@@ -1,10 +1,8 @@
-package com.likelion.cleopatra.domain.report.dto;
+package com.likelion.cleopatra.domain.report.dto.report;
 
 import com.likelion.cleopatra.domain.report.entity.Report;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 //@AllArgsConstructor
 //@NoArgsConstructor

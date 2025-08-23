@@ -6,10 +6,12 @@ import com.likelion.cleopatra.domain.population.dto.age.Ages;
 import com.likelion.cleopatra.domain.population.dto.description.DescriptionPopulation;
 import com.likelion.cleopatra.domain.population.dto.gender.Gender;
 import com.likelion.cleopatra.domain.population.repository.PopulationRepository;
-import com.likelion.cleopatra.domain.report.dto.ReportReq;
+import com.likelion.cleopatra.domain.report.dto.report.ReportReq;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class PopulationService {
@@ -24,7 +26,9 @@ public class PopulationService {
         Ages ages = Ages.from(doc);
         Gender gender = Gender.from(doc);
         DescriptionPopulation description = null;
-        return PopulationRes.from(ages, gender, description);
+        PopulationRes res = PopulationRes.from(ages, gender, description);
+        log.debug("[Population] population data created: populationRes = {}", res.toString());
+        return res;
     }
 
 }

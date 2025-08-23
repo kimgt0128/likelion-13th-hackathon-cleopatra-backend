@@ -1,7 +1,7 @@
 package com.likelion.cleopatra.domain.report.controller;
 
-import com.likelion.cleopatra.domain.report.dto.ReportReq;
-import com.likelion.cleopatra.domain.report.dto.ReportRes;
+import com.likelion.cleopatra.domain.report.dto.report.ReportReq;
+import com.likelion.cleopatra.domain.report.dto.report.ReportRes;
 import com.likelion.cleopatra.domain.report.service.ReportService;
 import com.likelion.cleopatra.global.exception.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;

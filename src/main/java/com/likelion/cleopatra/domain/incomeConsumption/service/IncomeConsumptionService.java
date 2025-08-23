@@ -6,9 +6,7 @@ import com.likelion.cleopatra.domain.incomeConsumption.dto.consumption.Consumpti
 import com.likelion.cleopatra.domain.incomeConsumption.dto.description.DescriptionIncomeConsumption;
 import com.likelion.cleopatra.domain.incomeConsumption.dto.income.Income;
 import com.likelion.cleopatra.domain.incomeConsumption.repository.IncomeConsumptionRepository;
-import com.likelion.cleopatra.domain.population.service.PopulationService;
-import com.likelion.cleopatra.domain.report.dto.ReportReq;
-import jdk.jfr.Description;
+import com.likelion.cleopatra.domain.report.dto.report.ReportReq;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

@@ -1,4 +1,4 @@
-// src/main/java/com/likelion/cleopatra/domain/population/dto/description/Description.java
+// src/main/java/com/likelion/cleopatra/domain/population/dto/dto/Description.java
 package com.likelion.cleopatra.domain.population.dto.description;
 
 import lombok.*;

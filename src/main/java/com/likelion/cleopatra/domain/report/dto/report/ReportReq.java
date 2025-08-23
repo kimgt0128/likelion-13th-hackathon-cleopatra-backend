@@ -1,5 +1,5 @@
 // src/main/java/com/likelion/cleopatra/domain/report/dto/ReportReq.java
-package com.likelion.cleopatra.domain.report.dto;
+package com.likelion.cleopatra.domain.report.dto.report;
 
 import com.likelion.cleopatra.global.common.enums.address.District;
 import com.likelion.cleopatra.global.common.enums.address.Neighborhood;
