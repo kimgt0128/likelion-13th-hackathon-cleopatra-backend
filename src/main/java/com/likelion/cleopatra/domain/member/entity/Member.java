@@ -21,7 +21,7 @@ public class Member {
     @Column(name = "member_id")
     private Long id;
 
-    // 쿠키의 기기식별값(예: UUID v4 하이픈 제거 32자, 여유 있게 64자로 선언)
+    // 프론트엔드에서 받은 UUID값
     @Column(name = "primary_key", nullable = false, length = 64, unique = true)
     private String primaryKey;
 
@@ -33,7 +33,7 @@ public class Member {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    public static Member to(String primary) {
+    public static Member create(String primary) {
         return Member.builder()
                 .primaryKey(primary)
                 .build();
