@@ -2,4 +2,4 @@ spring:
   config:
     import: optional:file:.env[.properties]
   profiles:
-    active: prod, webclient
+    active: pord, webclient

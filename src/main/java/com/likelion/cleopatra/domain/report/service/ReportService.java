@@ -12,6 +12,7 @@ import com.likelion.cleopatra.domain.member.repository.MemberRepository;
 import com.likelion.cleopatra.domain.openApi.rtms.service.RtmsService;
 import com.likelion.cleopatra.domain.population.dto.PopulationRes;
 import com.likelion.cleopatra.domain.population.service.PopulationService;
+import com.likelion.cleopatra.domain.report.ReportListRes;
 import com.likelion.cleopatra.domain.report.dto.report.TotalReportRes;
 import com.likelion.cleopatra.domain.report.dto.report.ReportData;
 import com.likelion.cleopatra.domain.report.dto.report.ReportReq;
@@ -20,11 +21,13 @@ import com.likelion.cleopatra.domain.report.dto.price.PriceRes;
 import com.likelion.cleopatra.domain.report.entity.Report;
 import com.likelion.cleopatra.domain.report.repository.ReportRepository;
 import com.likelion.cleopatra.global.geo.LawdCodeResolver;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.YearMonth;
+import java.util.List;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -41,6 +44,7 @@ public class ReportService {
     private final ObjectMapper objectMapper;
 
 
+    @Transactional
     public ReportRes create(String primaryKey, ReportReq req) {
 
         Member member = memberRepository.findByPrimaryKey(primaryKey)
@@ -60,6 +64,15 @@ public class ReportService {
         Report report = Report.create(member, req, totalReportRes, objectMapper);
 
         return ReportRes.from(reportRepository.save(report));
+    }
+
+    @Transactional
+    public ReportListRes getAll(String primaryKey) {
+        Member member = memberRepository.findByPrimaryKey(primaryKey)
+                .orElseThrow(() -> new IllegalArgumentException("member not found: " + primaryKey));
+
+        List<Report> reports = reportRepository.findAllByMemberOrderByCreatedAtDesc(member);
+        return ReportListRes.from(reports);
     }
 
 
