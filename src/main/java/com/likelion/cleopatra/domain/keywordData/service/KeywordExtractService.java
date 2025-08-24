@@ -32,61 +32,58 @@ public class KeywordExtractService {
         this.webClient = webClient;
     }
 
-    /** 행정구역+카테고리 기반으로 수집 → AI 요약 → 플랫폼별 문서 저장 → 요약 응답 */
+    /** 행정구역+카테고리 기반 수집 → AI 요약 → 플랫폼별 문서 저장 → 요약 응답 */
     public KeywordExtractRes analyzeAndSave(KeywordExtractReq req) {
-        final String area   = req.getDistrict().getKo() + " " + req.getNeighborhood().getKo();
-        final String query  = req.getPrimary().getKo() + " " + req.getSecondary().getKo();
+        final String category = req.getPrimary().getKo() + " " + req.getSecondary().getKo();
 
         // 1) 수집물 조회(최대 30)
-        List<ContentDoc> blogs  = contentRepository.findTop30ByPlatformAndKeywordOrderByCrawledAtDesc(Platform.NAVER_BLOG,  query);
-        List<ContentDoc> places = contentRepository.findTop30ByPlatformAndKeywordOrderByCrawledAtDesc(Platform.NAVER_PLACE, query);
-        List<ContentDoc> yt     = contentRepository.findTop30ByPlatformAndKeywordOrderByCrawledAtDesc(Platform.YOUTUBE,    query);
+        List<ContentDoc> blogs  = contentRepository.findTop30ByPlatformAndKeywordOrderByCrawledAtDesc(Platform.NAVER_BLOG,  category);
+        List<ContentDoc> places = contentRepository.findTop30ByPlatformAndKeywordOrderByCrawledAtDesc(Platform.NAVER_PLACE, category);
+        List<ContentDoc> yt     = contentRepository.findTop30ByPlatformAndKeywordOrderByCrawledAtDesc(Platform.YOUTUBE,    category);
 
         // 2) AI 요청 페이로드
         Map<String, List<KeywordDescriptionReq.Snippet>> data = new LinkedHashMap<>();
         data.put("data_naver_blog",  toSnippets(blogs));
         data.put("data_naver_palce", toSnippets(places)); // 사양 철자 유지
-        data.put("data_youtube",     toSnippets(yt));
+        // data.put("data_youtube",     toSnippets(yt)); // 필요 시 활성화
 
-        KeywordDescriptionReq payload = KeywordDescriptionReq.builder()
-                .areaa(area)                // 사양 고정
-                .keyword(query)
-                .data(data)
-                .build();
+        KeywordDescriptionReq payload = KeywordDescriptionReq.of(req, data);
 
         // 3) AI 호출
         KeywordDescriptionRes ai = webClient.post()
-                .uri("/alalyze")            // 사양 고정
+                .uri("/alalyze")
                 .bodyValue(payload)
                 .retrieve()
                 .bodyToMono(KeywordDescriptionRes.class)
                 .block();
 
-        // 4) 응답 → 플랫폼별 KeywordDoc 생성 및 저장
+        // 4) 응답 → 플랫폼별 KeywordDoc 생성(빌더 금지, 생성자 사용) 및 저장
         List<KeywordDoc> toSave = new ArrayList<>();
         if (ai != null && ai.getData() != null) {
             for (PlatformBlock b : ai.getData().values()) {
                 Platform p = toPlatform(b.getPlatform());
                 if (p == null) continue;
-                KeywordDoc doc = KeywordDoc.builder()
-                        .keyword(query)
-                        .district(req.getDistrict())
-                        .neighborhood(req.getNeighborhood())
-                        .primary(req.getPrimary())
-                        .secondary(req.getSecondary())
-                        .platform(p)
-                        .keywords(b.getPlatform_keyword())
-                        .descript(b.getPlatform_description())
-                        .build();
+
+                KeywordDoc doc = new KeywordDoc(
+                        category,
+                        req.getDistrict(),
+                        req.getNeighborhood(),
+                        req.getPrimary(),
+                        req.getSecondary(),
+                        p,
+                        b.getPlatform_keyword(),
+                        b.getPlatform_description()
+                );
                 toSave.add(doc);
             }
         }
         List<KeywordDoc> saved = toSave.isEmpty() ? List.of() : keywordRepository.saveAll(toSave);
 
         // 5) 요약 응답
+        String area = payload.getArea();
         return KeywordExtractRes.of(
                 area,
-                query,
+                category,
                 saved,
                 sizeOf(blogs),
                 sizeOf(places),
@@ -94,13 +91,15 @@ public class KeywordExtractService {
         );
     }
 
+
+    // --- helper
+
     private int sizeOf(List<?> xs) { return xs == null ? 0 : xs.size(); }
 
     private List<KeywordDescriptionReq.Snippet> toSnippets(List<ContentDoc> list) {
         if (list == null) return List.of();
         return list.stream()
                 .map(c -> KeywordDescriptionReq.Snippet.builder()
-                        .doc_id(c.getId())
                         .platform(c.getPlatform() == null ? null : c.getPlatform().name())
                         .text(c.getContentText())
                         .build())

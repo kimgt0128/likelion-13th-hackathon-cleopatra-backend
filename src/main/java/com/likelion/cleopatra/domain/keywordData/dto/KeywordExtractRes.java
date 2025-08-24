@@ -16,7 +16,6 @@ public class KeywordExtractRes {
     private int placeCount;                // NAVER_PLACE 수집 건수
     private int youtubeCount;              // YOUTUBE 수집 건수
     private List<PlatformSummary> platforms; // 플랫폼별 키워드/해설
-    private List<String> savedIds;         // 저장된 문서 ID 목록
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
     public static class PlatformSummary {
@@ -39,9 +38,6 @@ public class KeywordExtractRes {
                         .build())
                 .toList();
 
-        List<String> ids = (docs == null) ? List.of()
-                : docs.stream().map(KeywordDoc::getId).filter(java.util.Objects::nonNull).toList();
-
         return KeywordExtractRes.builder()
                 .area(area)
                 .keyword(query)
@@ -49,7 +45,6 @@ public class KeywordExtractRes {
                 .placeCount(placeCount)
                 .youtubeCount(youtubeCount)
                 .platforms(ps)
-                .savedIds(ids)
                 .build();
     }
 }
