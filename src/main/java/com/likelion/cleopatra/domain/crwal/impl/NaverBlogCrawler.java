@@ -26,8 +26,8 @@ public class NaverBlogCrawler {
         final Page page = context.newPage();
         try {
             // [ADD] 기본 타임아웃 현실화
-            page.setDefaultTimeout(50_000);
-            page.setDefaultNavigationTimeout(90_000);
+            page.setDefaultTimeout(30_000);
+            page.setDefaultNavigationTimeout(70_000);
 
             // [CHG] 텍스트만 필요 → image/media/font 차단
             page.route("**/*", r -> {
@@ -46,7 +46,7 @@ public class NaverBlogCrawler {
 
             // [ADD] 문단 렌더 안정화(문단 노드가 늦게 붙는 케이스)
             page.waitForSelector("p.se-text-paragraph, " + NaverBlogSelectors.LEGACY_BODY,
-                    new Page.WaitForSelectorOptions().setTimeout(3000).setState(WaitForSelectorState.ATTACHED));
+                    new Page.WaitForSelectorOptions().setTimeout(2000).setState(WaitForSelectorState.ATTACHED));
 
             // [CHG] 본문 컨테이너 확보(모바일 → 레거시 → mainFrame)
             Locator body = requireBody(page);
