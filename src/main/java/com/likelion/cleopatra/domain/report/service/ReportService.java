@@ -12,6 +12,8 @@ import com.likelion.cleopatra.domain.member.repository.MemberRepository;
 import com.likelion.cleopatra.domain.openApi.rtms.service.RtmsService;
 import com.likelion.cleopatra.domain.population.dto.PopulationRes;
 import com.likelion.cleopatra.domain.population.service.PopulationService;
+import com.likelion.cleopatra.domain.report.dto.ReportDetailRes;
+import com.likelion.cleopatra.domain.report.dto.ReportListRes;
 import com.likelion.cleopatra.domain.report.dto.report.TotalReportRes;
 import com.likelion.cleopatra.domain.report.dto.report.ReportData;
 import com.likelion.cleopatra.domain.report.dto.report.ReportReq;
@@ -20,11 +22,13 @@ import com.likelion.cleopatra.domain.report.dto.price.PriceRes;
 import com.likelion.cleopatra.domain.report.entity.Report;
 import com.likelion.cleopatra.domain.report.repository.ReportRepository;
 import com.likelion.cleopatra.global.geo.LawdCodeResolver;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.YearMonth;
+import java.util.List;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -41,6 +45,7 @@ public class ReportService {
     private final ObjectMapper objectMapper;
 
 
+    @Transactional
     public ReportRes create(String primaryKey, ReportReq req) {
 
         Member member = memberRepository.findByPrimaryKey(primaryKey)
@@ -62,6 +67,15 @@ public class ReportService {
         return ReportRes.from(reportRepository.save(report));
     }
 
+    @Transactional
+    public ReportListRes getAll(String primaryKey) {
+        Member member = memberRepository.findByPrimaryKey(primaryKey)
+                .orElseThrow(() -> new IllegalArgumentException("member not found: " + primaryKey));
+
+        List<Report> reports = reportRepository.findAllByMemberOrderByCreatedAtDesc(member);
+        return ReportListRes.from(reports);
+    }
+
 
     /** ----------helper **/
     // ReportReq로부터 {PopulationRes, PriceRes, IncomeConsumptionRes}로 가공해주는 함수. 이후에 ai한테 넘겨서 전체 설명을 포함한 TotalReportRes로 만든다.
@@ -80,5 +94,15 @@ public class ReportService {
         IncomeConsumptionRes incomeConsumptionRes = incomeConsumptionService.getIncomeConsumptionData(req);
 
         return ReportData.of(keywordsReportRes, populationRes, priceRes, incomeConsumptionRes);
+    }
+
+    public ReportDetailRes get(String primaryKey, Long reportId) {
+        Member member = memberRepository.findByPrimaryKey(primaryKey)
+                .orElseThrow(() -> new IllegalArgumentException("member not found: " + primaryKey));
+
+        Report report = reportRepository.findByIdAndMember(reportId, member)
+                .orElseThrow(() -> new IllegalArgumentException("report not found: " + reportId));
+
+        return ReportDetailRes.from(report, objectMapper);
     }
 }
