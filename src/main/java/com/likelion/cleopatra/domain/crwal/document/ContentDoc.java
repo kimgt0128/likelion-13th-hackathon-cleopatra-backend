@@ -23,7 +23,6 @@ public class ContentDoc {
     private String url;
     private String canonicalUrl;
     private String title; // 블로그 제목, 네이버 플레이스 가게 이름, 유튜브 영상 제목
-    private String contentHtml;
     private String contentText;
     private Instant crawledAt;
 
@@ -35,7 +34,6 @@ public class ContentDoc {
                 .canonicalUrl(link.getCanonicalUrl())
                 .keyword(link.getKeyword())
                 .title(r.getTitle())
-                .contentHtml(r.getHtml())
                 .contentText(r.getText())
                 .crawledAt(Instant.now())
                 .build();
@@ -50,7 +48,6 @@ public class ContentDoc {
                 .canonicalUrl(link.getCanonicalUrl())
                 .keyword(link.getKeyword())
                 .title(placeName)                 // 플레이스 이름
-                .contentHtml(null)                // 리뷰는 텍스트(JSON)로 저장
                 .contentText(reviewJson)          // 리뷰 배열 JSON
                 .crawledAt(Instant.now())
                 .build();
