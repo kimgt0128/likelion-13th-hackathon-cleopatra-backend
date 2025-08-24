@@ -3,6 +3,19 @@
 name: cleopatra # 프로젝트명 고정(볼륨/네트워크 접두사 고정)
 
 services:
+  ai:
+    image: ai_report2:latest
+    container_name: dddododo
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./outputs:/app/outputs
+    restart: unless-stopped
+    networks:
+      - my-network
+
   mysql:
     image: mysql:8.0
     container_name: cleopatra-mysql
@@ -40,7 +53,7 @@ services:
     ports:
       - "27017:27017"
     volumes:
-      - mongo_data:/collect/db
+      - mongo_data:/data/db
       - ./mongo-init:/docker-entrypoint-initdb.d
     networks:
       - my-network
