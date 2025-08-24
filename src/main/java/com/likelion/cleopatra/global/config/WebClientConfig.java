@@ -27,10 +27,9 @@ public class WebClientConfig {
     @Value("${service.rtms.service-key}")
     private String rtmsSecret;
 
-    @Value("${ai.keyword.base-url}")
-    private String aiKeywordBaseUrl;      // e.g. http://ai:8000/api/ai
-    @Value("${ai.description.base-url}")
-    private String aiDescriptionBaseUrl;  // e.g. http://ai:8000/api/ai
+    @Value("${ai.base-url}")
+    private String aiBaseUrl;      // e.g. http://ai:8000/api/ai
+
 
     @Bean(name = "naverWebClient")
     public WebClient naverWebClient() {
@@ -67,7 +66,7 @@ public class WebClientConfig {
     @Bean(name = "descriptionWebClient")
     public WebClient descriptionWebClient() {
         return WebClient.builder()
-                .baseUrl(aiDescriptionBaseUrl)        // http://ai:8000/api/ai
+                .baseUrl(aiBaseUrl)        // http://ai:8000/api/ai
                 .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
@@ -76,7 +75,7 @@ public class WebClientConfig {
     @Bean(name = "keywordWebClient")
     public WebClient keywordWebClient() {
         return WebClient.builder()
-                .baseUrl(aiKeywordBaseUrl)            // http://ai:8000/api/ai
+                .baseUrl(aiBaseUrl)            // http://ai:8000/api/ai
                 .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
