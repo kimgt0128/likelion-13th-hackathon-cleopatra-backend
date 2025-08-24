@@ -65,3 +65,16 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+/** 파라미터 이름 보존(AOP에서 메서드 파라미터명 로깅용) */
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs += ['-parameters']
+    options.encoding = 'UTF-8'
+}
+
+/** Playwright 브라우저 미리 설치 (권장: Docker 빌드 단계에서 실행) */
+tasks.register('playwrightInstall') {
+    doLast {
+        com.microsoft.playwright.CLI.main(['install'] as String[])
+    }
+}
