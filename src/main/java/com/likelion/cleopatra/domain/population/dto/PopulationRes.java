@@ -14,12 +14,10 @@ public class PopulationRes {
     private long totalResident;
     private Ages ages;
     private Gender gender;
-    private DescriptionPopulation description;
 
-    public static PopulationRes from(Ages ages, Gender gender, DescriptionPopulation description) {
+    public static PopulationRes from(Ages ages, Gender gender) {
         return PopulationRes.builder()
                 .ages(ages)
-                .gender(gender)
-                .description(description).build();
+                .gender(gender).build();
     }
 }

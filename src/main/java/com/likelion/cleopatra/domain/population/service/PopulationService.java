@@ -25,8 +25,7 @@ public class PopulationService {
 
         Ages ages = Ages.from(doc);
         Gender gender = Gender.from(doc);
-        DescriptionPopulation description = null;
-        PopulationRes res = PopulationRes.from(ages, gender, description);
+        PopulationRes res = PopulationRes.from(ages, gender);
         log.debug("[Population] population data created: populationRes = {}", res.toString());
         return res;
     }

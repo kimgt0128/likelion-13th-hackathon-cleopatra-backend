@@ -92,4 +92,13 @@ public class WebClientConfig {
         return WebClient.builder().baseUrl("http://localhost:8000/api/ai").build();
 
     }
+
+    // 키워드 요약용 AI 컨테이너 호출
+    @Bean(name = "keywordWebClient")
+    public WebClient keywordWebClient() {
+        return WebClient.builder()
+                .baseUrl("http://localhost:8000/api/ai")
+                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .build();
+    }
 }

@@ -15,12 +15,10 @@ import lombok.*;
 public class IncomeConsumptionRes {
     private Income income;         // 소득
     private Consumption consumption; // 지출
-    private DescriptionIncomeConsumption descriptionIncomeConsumption;
 
-    public static IncomeConsumptionRes from(Income income, Consumption consumption, DescriptionIncomeConsumption descriptionIncomeConsumption) {
+    public static IncomeConsumptionRes from(Income income, Consumption consumption) {
         return IncomeConsumptionRes.builder()
                 .income(income)
-                .consumption(consumption)
-                .descriptionIncomeConsumption(descriptionIncomeConsumption).build();
+                .consumption(consumption).build();
     }
 }

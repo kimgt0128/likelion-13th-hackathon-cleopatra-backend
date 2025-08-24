@@ -1,12 +1,10 @@
 package com.likelion.cleopatra.domain.report.dto.report;
 
 import com.likelion.cleopatra.domain.incomeConsumption.dto.IncomeConsumptionRes;
+import com.likelion.cleopatra.domain.keywordData.dto.report.KeywordReportRes;
 import com.likelion.cleopatra.domain.population.dto.PopulationRes;
-import com.likelion.cleopatra.domain.report.dto.keyword.KeywordEntry;
 import com.likelion.cleopatra.domain.report.dto.price.PriceRes;
 import lombok.*;
-
-import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -15,17 +13,17 @@ import java.util.List;
 @Setter
 public class ReportData {
 
+    private KeywordReportRes keywordReportRes;
     private PopulationRes populationRes;
     private PriceRes priceRes;
     private IncomeConsumptionRes incomeConsumptionRes;
-    private List<KeywordEntry> keywords;
 
-    public static ReportData of(PopulationRes populationRes, PriceRes priceRes, IncomeConsumptionRes incomeConsumptionRes, List<KeywordEntry> keywords) {
+    public static ReportData of(KeywordReportRes keywordReportRes,PopulationRes populationRes, PriceRes priceRes, IncomeConsumptionRes incomeConsumptionRes) {
 
         return ReportData.builder()
+                .keywordReportRes(keywordReportRes)
                 .populationRes(populationRes)
-                .populationRes(populationRes)
-                .incomeConsumptionRes(incomeConsumptionRes)
-                .keywords(keywords).build();
+                .priceRes(priceRes)
+                .incomeConsumptionRes(incomeConsumptionRes).build();
     }
 }

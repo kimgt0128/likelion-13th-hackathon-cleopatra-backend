@@ -1,5 +1,6 @@
-package com.likelion.cleopatra.domain.collect.document;
+package com.likelion.cleopatra.domain.crwal.document;
 
+import com.likelion.cleopatra.domain.collect.document.LinkDoc;
 import com.likelion.cleopatra.domain.crwal.dto.CrawlRes;
 import com.likelion.cleopatra.global.common.enums.Platform;
 import lombok.*;
