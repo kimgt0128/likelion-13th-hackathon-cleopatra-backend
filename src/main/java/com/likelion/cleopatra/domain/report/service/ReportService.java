@@ -49,6 +49,11 @@ public class ReportService {
         ReportData reportData = preprocess(req);
         // 여기서부터 keyword를 포함하여 다시 응답 가져오도록
         ReportDescription reportDescription = descriptionService.getDescription(reportData);
+//        이제 데이터로 AI가판단해서 AI 설명을 포함한 진짜 전체 보고서용 데이터를 가져오는지 정합성 판단
+//                1. 데이터 추출 형식(노션의 DTO와 비교)
+//                2. 데이터 가져올시 논리적 오류가 없는지 확인
+//                이대로 GPT한테 물어보기!!
+//            해당 로직의 모든 클래스 복사 후 질문하기!(썼던 최근 쓰레드에 그대로입력, 거기가 지금까지 워크플로우 제일 잘 학습되어있음)
         TotalReportRes totalReportRes = TotalReportRes.from(reportData, reportDescription);
 
         // 이후
