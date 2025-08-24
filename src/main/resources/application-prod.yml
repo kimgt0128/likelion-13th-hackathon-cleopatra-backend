@@ -28,7 +28,5 @@ logging:
     org.mongodb.driver: WARN
 
 ai:
-  keyword:
-    base-url: http://ai:8000/api/ai
-  description:
-    base-url: http://ai:8000/api/ai
+  base-url: ${AI_BASE_URL}
+
