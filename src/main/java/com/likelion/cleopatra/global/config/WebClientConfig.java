@@ -14,7 +14,7 @@ import java.net.URI;
 
 @Configuration
 public class WebClientConfig {
-
+ // 버그수정
     @Value("${service.naver.url}")
     private String naverBaseUrl;
     @Value("${service.naver.client-id}")
