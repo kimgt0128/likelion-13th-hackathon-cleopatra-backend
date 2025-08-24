@@ -16,7 +16,6 @@ spring:
 
   data:
     mongodb:
-      #uri: mongodb://${MONGO_APP_USERNAME}:${MONGO_APP_PASSWORD}@mongo:27017/${MONGO_DB}?authSource=admin
       uri: mongodb://${MONGO_APP_USERNAME}:${MONGO_APP_PASSWORD}@mongo:27017/${MONGO_DB}?authSource=${MONGO_AUTH_DB:${MONGO_DB}}
       auto-index-creation: false
 
@@ -27,3 +26,9 @@ logging:
     root: info
     org.springframework.data.mongodb.core.MongoTemplate: INFO
     org.mongodb.driver: WARN
+
+ai:
+  keyword:
+    base-url: http://ai:8000/api/ai
+  description:
+    base-url: http://ai:8000/api/ai
