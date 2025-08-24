@@ -1,3 +1,4 @@
+// src/main/java/com/likelion/cleopatra/domain/report/dto/report/TotalReportRes.java
 package com.likelion.cleopatra.domain.report.dto.report;
 
 import com.likelion.cleopatra.domain.aiDescription.dto.ReportDescription;
@@ -13,22 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 최종 저장/응답용 "섹션 전용" DTO.
- * 요청하신 대로 아래 6개 섹션만 포함합니다:
- *   - description_summary
- *   - keywords
- *   - population
- *   - price
- *   - income_consumption
- *   - description_strategy
- *
- * 나머지 메타 필드(status, data, report_id, 지역/카테고리 등)는 포함하지 않습니다.
- */
 @Getter @Builder @NoArgsConstructor @AllArgsConstructor
 public class TotalReportRes {
-
-    /* ============ 섹션(6) ============ */
 
     private ReportDescription.DescriptionSummary description_summary;
     private List<KeywordRow> keywords;
@@ -37,13 +24,11 @@ public class TotalReportRes {
     private IncomeConsumptionOut income_consumption;
     private ReportDescription.DescriptionStrategy description_strategy;
 
-    /* ============ 섹션 구조 정의 ============ */
-
     @Getter @Builder @NoArgsConstructor @AllArgsConstructor
     public static class KeywordRow {
-        private String platform;       // NAVER_BLOG | NAVER_REVIEW | YOUTUBE ...
-        private List<String> keywords; // ["중고 거래", ...]
-        private String descript;       // 간단 해설
+        private String platform;
+        private List<String> keywords;
+        private String descript;
     }
 
     @Getter @Builder @NoArgsConstructor @AllArgsConstructor
@@ -150,6 +135,7 @@ public class TotalReportRes {
         private BigDecimal medical;
         private BigDecimal transport;
         private BigDecimal education;
+        private BigDecimal entertainment;
         private BigDecimal leisure_culture;
         private BigDecimal other;
         private BigDecimal eating_out;
@@ -157,19 +143,18 @@ public class TotalReportRes {
 
     @Getter @Builder @NoArgsConstructor @AllArgsConstructor
     public static class PercentOut {
-        private double spending_total;     // 원데이터 부재 → 0.0으로 유지
+        private double spending_total;
         private double food;
         private double clothing_footwear;
         private double living_goods;
         private double medical;
         private double transport;
         private double education;
+        private double entertainment;
         private double leisure_culture;
         private double other;
         private double eating_out;
     }
-
-    /* ============ Report.create(...)에서 섹션별 JSON 직렬화 접근용 ============ */
 
     public ReportDescription.DescriptionSummary getDescriptionSummary() { return description_summary; }
     public List<KeywordRow> getKeywords() { return keywords; }
@@ -177,8 +162,6 @@ public class TotalReportRes {
     public PriceOut getPrice() { return price; }
     public IncomeConsumptionOut getIncomeConsumption() { return income_consumption; }
     public ReportDescription.DescriptionStrategy getDescriptionStrategy() { return description_strategy; }
-
-    /* ============ 어댑터: ReportData + ReportDescription → TotalReportRes ============ */
 
     public static TotalReportRes from(ReportData src, ReportDescription desc) {
         return TotalReportRes.builder()
@@ -193,8 +176,6 @@ public class TotalReportRes {
                 .description_strategy(desc == null ? null : desc.getDescriptionStrategy())
                 .build();
     }
-
-    /* ============ 매핑 헬퍼 ============ */
 
     private static List<KeywordRow> toKeywordRows(KeywordReportRes kr) {
         if (kr == null || kr.getKeywords() == null) return List.of();
@@ -287,28 +268,30 @@ public class TotalReportRes {
                 .build();
 
         ExpendOut ex = ExpendOut.builder()
-                .food(getBD(ic, 0))
-                .clothing_footwear(getBD(ic, 1))
-                .living_goods(getBD(ic, 2))
-                .medical(getBD(ic, 3))
-                .transport(getBD(ic, 4))
-                .education(getBD(ic, 5))
-                .leisure_culture(getBD(ic, 6))
-                .other(getBD(ic, 7))
-                .eating_out(getBD(ic, 8))
+                .food(getBD(ic, 0, "food"))
+                .clothing_footwear(getBD(ic, 1, "clothing_footwear"))
+                .living_goods(getBD(ic, 2, "living_goods"))
+                .medical(getBD(ic, 3, "medical"))
+                .transport(getBD(ic, 4, "transport"))
+                .education(getBD(ic, 5, "education"))
+                .entertainment(getBD(ic, 6, "entertainment"))
+                .leisure_culture(getBD(ic, 7, "leisure_culture"))
+                .other(getBD(ic, 8, "other"))
+                .eating_out(getBD(ic, 9, "eating_out"))
                 .build();
 
         PercentOut pc = PercentOut.builder()
-                .spending_total(0.0) // 원데이터 부재
-                .food(getP(ic, 0))
-                .clothing_footwear(getP(ic, 1))
-                .living_goods(getP(ic, 2))
-                .medical(getP(ic, 3))
-                .transport(getP(ic, 4))
-                .education(getP(ic, 5))
-                .leisure_culture(getP(ic, 6))
-                .other(getP(ic, 7))
-                .eating_out(getP(ic, 8))
+                .spending_total(0.0)
+                .food(getP(ic, 0, "food"))
+                .clothing_footwear(getP(ic, 1, "clothing_footwear"))
+                .living_goods(getP(ic, 2, "living_goods"))
+                .medical(getP(ic, 3, "medical"))
+                .transport(getP(ic, 4, "transport"))
+                .education(getP(ic, 5, "education"))
+                .entertainment(getP(ic, 6, "entertainment"))
+                .leisure_culture(getP(ic, 7, "leisure_culture"))
+                .other(getP(ic, 8, "other"))
+                .eating_out(getP(ic, 9, "eating_out"))
                 .build();
 
         ConsumptionOut cons = ConsumptionOut.builder()
@@ -324,7 +307,7 @@ public class TotalReportRes {
                 .build();
     }
 
-    /* ============ util ============ */
+    // ---------- util ----------
 
     private static long getLong(List<Long> xs, int i) {
         if (xs == null || xs.size() <= i || xs.get(i) == null) return 0L;
@@ -334,14 +317,40 @@ public class TotalReportRes {
         if (xs == null || xs.size() <= i || xs.get(i) == null) return 0.0;
         return xs.get(i);
     }
-    private static BigDecimal getBD(IncomeConsumptionRes ic, int i) {
-        if (ic == null || ic.getConsumption() == null || ic.getConsumption().getExpend() == null) return null;
-        List<BigDecimal> xs = ic.getConsumption().getExpend();
-        return xs.size() > i ? xs.get(i) : null;
+
+    // List<BigDecimal> 또는 Map<String, BigDecimal> 모두 지원
+    @SuppressWarnings("unchecked")
+    private static BigDecimal getBD(IncomeConsumptionRes ic, int i, String key) {
+        if (ic == null || ic.getConsumption() == null) return null;
+        Object ex = (Object) ic.getConsumption().getExpend();
+        if (ex instanceof List) {
+            List<?> xs = (List<?>) ex;
+            Object v = (i < xs.size()) ? xs.get(i) : null;
+            return v instanceof BigDecimal ? (BigDecimal) v : null;
+        }
+        if (ex instanceof Map) {
+            Map<String, ?> m = (Map<String, ?>) ex;
+            Object v = m.get(key);
+            return v instanceof BigDecimal ? (BigDecimal) v : null;
+        }
+        return null;
     }
-    private static double getP(IncomeConsumptionRes ic, int i) {
-        if (ic == null || ic.getConsumption() == null || ic.getConsumption().getPercent() == null) return 0.0;
-        List<Double> xs = ic.getConsumption().getPercent();
-        return xs.size() > i && xs.get(i) != null ? xs.get(i) : 0.0;
+
+    // List<Double> 또는 Map<String, Double> 모두 지원
+    @SuppressWarnings("unchecked")
+    private static double getP(IncomeConsumptionRes ic, int i, String key) {
+        if (ic == null || ic.getConsumption() == null) return 0.0;
+        Object ex = (Object) ic.getConsumption().getPercent();
+        if (ex instanceof List) {
+            List<?> xs = (List<?>) ex;
+            Object v = (i < xs.size()) ? xs.get(i) : null;
+            return v instanceof Double ? (Double) v : 0.0;
+        }
+        if (ex instanceof Map) {
+            Map<String, ?> m = (Map<String, ?>) ex;
+            Object v = m.get(key);
+            return v instanceof Double ? (Double) v : 0.0;
+        }
+        return 0.0;
     }
 }
