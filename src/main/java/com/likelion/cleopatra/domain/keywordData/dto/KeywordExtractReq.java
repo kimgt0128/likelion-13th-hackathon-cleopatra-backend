@@ -5,7 +5,6 @@ import com.likelion.cleopatra.global.common.enums.address.Neighborhood;
 import com.likelion.cleopatra.global.common.enums.keyword.Primary;
 import com.likelion.cleopatra.global.common.enums.keyword.Secondary;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
