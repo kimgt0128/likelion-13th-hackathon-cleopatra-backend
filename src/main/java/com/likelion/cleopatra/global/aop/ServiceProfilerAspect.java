@@ -1,3 +1,4 @@
+// src/main/java/com/likelion/cleopatra/global/aop/ServiceProfilerAspect.java
 package com.likelion.cleopatra.global.aop;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,8 +12,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import reactor.core.publisher.Mono;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -25,21 +26,22 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ServiceProfilerAspect {
 
-    private final ObjectMapper objectMapper; // DTO를 JSON으로 출력
+    private final ObjectMapper objectMapper;
 
-    @Value("${app.aop.profiler.print-args:false}") private boolean printArgs;
-    @Value("${app.aop.profiler.print-return:false}") private boolean printReturn;
-    @Value("${app.aop.profiler.slow-threshold-ms:500}") private long slowThresholdMs;
-    @Value("${app.aop.profiler.return-max-chars:2000}") private int returnMaxChars;
+    @Value("${app.aop.profiler.print-args:false}")       private boolean printArgs;
+    @Value("${app.aop.profiler.print-return:false}")     private boolean printReturn;
+    @Value("${app.aop.profiler.pretty-print:true}")      private boolean prettyPrint;
+    @Value("${app.aop.profiler.slow-threshold-ms:500}")  private long slowThresholdMs;
+    @Value("${app.aop.profiler.return-max-chars:100000}") private int returnMaxChars; // 넉넉히
 
     @Around("execution(public * com.likelion.cleopatra..service..*(..))")
     public Object profile(ProceedingJoinPoint pjp) throws Throwable {
         long t0 = System.nanoTime();
 
         MethodSignature sig = (MethodSignature) pjp.getSignature();
-        String cls = sig.getDeclaringType().getSimpleName();
+        String cls = sig.getDeclaringType().getName();
         String method = sig.getName();
-        String args = printArgs ? argSummary(pjp.getArgs()) : "";
+        String args = printArgs ? argSummary(sig, pjp.getArgs()) : "";
 
         log.info("[PROF][START] {}#{}{}", cls, method, args);
 
@@ -47,7 +49,6 @@ public class ServiceProfilerAspect {
             Object ret = pjp.proceed();
             long ms = (System.nanoTime() - t0) / 1_000_000;
 
-            // Reactive 타입 지원
             if (ret instanceof Mono<?> mono) {
                 return mono.doOnSuccess(v -> afterSuccess(cls, method, ms, v))
                         .doOnError(e -> afterError(cls, method, ms, e));
@@ -73,7 +74,8 @@ public class ServiceProfilerAspect {
         else                       log.info("[PROF][END] {}#{} {} ms", cls, method, ms);
 
         if (printReturn && isLoggableReturn(ret)) {
-            log.info("[PROF][RET] {}#{} -> {}", cls, method, shorten(jsonSafe(ret)));
+            String json = toJson(ret, prettyPrint);
+            log.info("[PROF][RET] {}#{} -> \n{}", cls, method, shorten(json));
         }
     }
 
@@ -82,30 +84,56 @@ public class ServiceProfilerAspect {
                 cls, method, ms, e.getClass().getSimpleName(), safeMsg(e));
     }
 
-    // ---- helpers ----
+    // ---------- helpers ----------
     private boolean isLoggableReturn(Object ret) {
         if (ret == null) return false;
         if (ret instanceof byte[] || ret instanceof char[]) return false;
         String name = ret.getClass().getSimpleName();
         String pkg  = ret.getClass().getPackageName();
-        // DTO 또는 *Res만 로깅
         return name.endsWith("Res") || pkg.contains(".dto");
     }
 
-    private String jsonSafe(Object v) {
-        try { return objectMapper.writer().writeValueAsString(v); }
-        catch (Exception e) { return String.valueOf(v); }
+    private String toJson(Object v, boolean pretty) {
+        try {
+            return pretty
+                    ? objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(v)
+                    : objectMapper.writeValueAsString(v);
+        } catch (Exception e) {
+            return String.valueOf(v);
+        }
     }
 
     private String shorten(String s) {
         if (s == null) return "null";
-        return s.length() > returnMaxChars ? s.substring(0, returnMaxChars) + "...(trunc)" : s;
+        return s.length() > returnMaxChars ? s.substring(0, returnMaxChars) + "\n...(truncated)" : s;
     }
 
-    private String argSummary(Object[] args) {
+    private String argSummary(MethodSignature sig, Object[] args) {
         if (args == null || args.length == 0) return "";
-        String joined = Arrays.stream(args).map(this::shortenArg).collect(Collectors.joining(", "));
-        return " args=[" + joined + "]";
+        String[] names = sig.getParameterNames(); // -parameters 옵션 필요
+        String joined = "";
+        try {
+            joined = Arrays.stream(args)
+                    .map(this::argToJson)
+                    .collect(Collectors.joining(",\n"));
+            joined = "[\n" + joined + "\n]";
+        } catch (Exception e) {
+            // fallback to toString
+            joined = Arrays.stream(args)
+                    .map(this::shortenArg)
+                    .collect(Collectors.joining(", "));
+        }
+        return " args=\n" + joined;
+    }
+
+    private String argToJson(Object o) {
+        if (o == null) return "null";
+        if (o instanceof String || o.getClass().isPrimitive()
+                || Number.class.isAssignableFrom(o.getClass())
+                || Boolean.class.isAssignableFrom(o.getClass())) {
+            return String.valueOf(o);
+        }
+        return toJson(o, true); // args는 항상 pretty
     }
 
     private String shortenArg(Object o) {
