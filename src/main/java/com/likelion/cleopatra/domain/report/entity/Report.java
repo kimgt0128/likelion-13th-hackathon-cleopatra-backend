@@ -1,4 +1,3 @@
-// src/main/java/com/likelion/cleopatra/domain/report/entity/Report.java
 package com.likelion.cleopatra.domain.report.entity;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,13 +11,10 @@ import com.likelion.cleopatra.global.common.enums.keyword.Secondary;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/** 실무 포인트
- * - 조인 없음. 섹션별 JSON 컬럼으로 분할 저장.
- * - dev(H2)에서 json 타입이 깨지면 columnDefinition="TEXT"로 변경.
- * - 추후 인덱싱 필요 시 가상컬럼+인덱스 추가.
+/**
+ * 각 섹션을 JSON 컬럼으로 저장.
  */
 @Getter
 @Builder
@@ -56,50 +52,44 @@ public class Report {
     private LocalDateTime createdAt;
 
     // 섹션별 JSON
-    @Column(columnDefinition = "json", nullable = true)
+    @Column(columnDefinition = "json")
     private String descriptionSummaryJson;   // $.description_summary
 
-    @Column(columnDefinition = "json", nullable = true)
+    @Column(columnDefinition = "json")
     private String keywordsJson;             // $.keywords
 
-    @Column(columnDefinition = "json", nullable = true)
+    @Column(columnDefinition = "json")
     private String populationJson;           // $.population
 
-    @Column(columnDefinition = "json", nullable = true)
+    @Column(columnDefinition = "json")
     private String priceJson;                // $.price
 
-    @Column(columnDefinition = "json", nullable = true)
+    @Column(columnDefinition = "json")
     private String incomeConsumptionJson;    // $.income_consumption
 
-    @Column(columnDefinition = "json", nullable = true)
+    @Column(columnDefinition = "json")
     private String descriptionStrategyJson;  // $.description_strategy
 
 
-    /** 팩토리: 데이터 묶음 + 설명 묶음 → 섹션별 JSON 저장 */
+    /** 팩토리: 섹션별 JSON 직렬화 저장 */
     public static Report create(Member member,
                                 ReportReq req,
                                 TotalReportRes total,
                                 ObjectMapper om) {
         return Report.builder()
-                // Member
                 .member(member)
-
-                // 기본 필드
                 .primary(req.getPrimary())
                 .secondary(req.getSecondary())
                 .district(req.getDistrict())
                 .neighborhood(req.getNeighborhood())
                 .subNeighborhood(req.getSub_neighborhood())
                 .createdAt(LocalDateTime.now())
-
-                // 섹터별 Json 형식
                 .descriptionSummaryJson(write(om, total.getDescriptionSummary()))
                 .keywordsJson(write(om, total.getKeywords()))
                 .populationJson(write(om, total.getPopulation()))
                 .priceJson(write(om, total.getPrice()))
                 .incomeConsumptionJson(write(om, total.getIncomeConsumption()))
                 .descriptionStrategyJson(write(om, total.getDescriptionStrategy()))
-
                 .build();
     }
 
@@ -108,6 +98,7 @@ public class Report {
         try { return om.writeValueAsString(v); }
         catch (Exception e) { throw new IllegalStateException("JSON serialize failed", e); }
     }
+
     private static <T> T safe(SupplierX<T> s) { try { return s.get(); } catch (Exception e) { return null; } }
     @FunctionalInterface private interface SupplierX<T> { T get() throws Exception; }
 }

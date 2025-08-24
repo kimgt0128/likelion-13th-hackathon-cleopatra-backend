@@ -29,7 +29,7 @@ public final class LawdCodeResolver {
 
     /** enum 기반 조회 */
     public static String resolveGuCode5(District district){
-        String code = GU.get(district);
+        String code = GU.get(district.getKo());
         if (code == null) throw new IllegalArgumentException("자치구 미지원: " + district);
         return code;
     }

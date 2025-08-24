@@ -1,14 +1,13 @@
 package com.likelion.cleopatra.domain.crwal.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.likelion.cleopatra.domain.collect.document.ContentDoc;
+import com.likelion.cleopatra.domain.crwal.document.ContentDoc;
 import com.likelion.cleopatra.domain.collect.document.LinkDoc;
 import com.likelion.cleopatra.domain.collect.document.LinkStatus;
 import com.likelion.cleopatra.domain.collect.repository.ContentRepository;
 import com.likelion.cleopatra.domain.collect.repository.LinkDocRepository;
 import com.likelion.cleopatra.domain.crwal.dto.CrawlRes;
 import com.likelion.cleopatra.domain.crwal.dto.place.NaverPlaceLinkRes;
-import com.likelion.cleopatra.domain.crwal.dto.place.NaverPlaceReviewRes;
 import com.likelion.cleopatra.domain.crwal.exception.CrawlErrorCode;
 import com.likelion.cleopatra.domain.crwal.exception.CrawlException;
 import com.likelion.cleopatra.domain.crwal.exception.failure.FailureClassifier;

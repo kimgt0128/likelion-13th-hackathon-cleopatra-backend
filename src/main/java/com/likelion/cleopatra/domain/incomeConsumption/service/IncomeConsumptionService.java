@@ -23,7 +23,6 @@ public class IncomeConsumptionService {
 
         Income income = Income.from(doc);
         Consumption consumption = Consumption.from(doc);
-        DescriptionIncomeConsumption descriptionIncomeConsumption = null;
-        return IncomeConsumptionRes.from(income, consumption, descriptionIncomeConsumption);
+        return IncomeConsumptionRes.from(income, consumption);
     }
 }

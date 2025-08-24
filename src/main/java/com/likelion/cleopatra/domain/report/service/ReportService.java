@@ -5,12 +5,13 @@ import com.likelion.cleopatra.domain.aiDescription.DescriptionService;
 import com.likelion.cleopatra.domain.aiDescription.dto.ReportDescription;
 import com.likelion.cleopatra.domain.incomeConsumption.dto.IncomeConsumptionRes;
 import com.likelion.cleopatra.domain.incomeConsumption.service.IncomeConsumptionService;
+import com.likelion.cleopatra.domain.keywordData.dto.report.KeywordReportRes;
+import com.likelion.cleopatra.domain.keywordData.service.KeywordService;
 import com.likelion.cleopatra.domain.member.entity.Member;
 import com.likelion.cleopatra.domain.member.repository.MemberRepository;
 import com.likelion.cleopatra.domain.openApi.rtms.service.RtmsService;
 import com.likelion.cleopatra.domain.population.dto.PopulationRes;
 import com.likelion.cleopatra.domain.population.service.PopulationService;
-import com.likelion.cleopatra.domain.report.dto.keyword.KeywordEntry;
 import com.likelion.cleopatra.domain.report.dto.report.TotalReportRes;
 import com.likelion.cleopatra.domain.report.dto.report.ReportData;
 import com.likelion.cleopatra.domain.report.dto.report.ReportReq;
@@ -24,7 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.YearMonth;
-import java.util.List;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -32,7 +32,8 @@ import java.util.List;
 public class ReportService {
 
     private final MemberRepository memberRepository;
-    private final ReportRepository repository;
+    private final ReportRepository reportRepository;
+    private final KeywordService keywordsService;
     private final PopulationService populationService;
     private final RtmsService rtmsService;
     private final IncomeConsumptionService incomeConsumptionService;
@@ -41,33 +42,33 @@ public class ReportService {
 
 
     public ReportRes create(String primaryKey, ReportReq req) {
-        long t0 = System.nanoTime();
 
         Member member = memberRepository.findByPrimaryKey(primaryKey)
                 .orElseThrow(() -> new IllegalArgumentException("member not found: " + primaryKey));
 
-        log.debug("[REPORT] create start primaryKey={} district={} neighborhood={} subNeighborhood={} secondary={} anchor=2025-06",
-                primaryKey, req.getDistrict(), req.getNeighborhood(), req.getSub_neighborhood(), req.getSecondary());
-
-
-
         ReportData reportData = preprocess(req);
+        // 여기서부터 keyword를 포함하여 다시 응답 가져오도록
         ReportDescription reportDescription = descriptionService.getDescription(reportData);
+//        이제 데이터로 AI가판단해서 AI 설명을 포함한 진짜 전체 보고서용 데이터를 가져오는지 정합성 판단
+//                1. 데이터 추출 형식(노션의 DTO와 비교)
+//                2. 데이터 가져올시 논리적 오류가 없는지 확인
+//                이대로 GPT한테 물어보기!!
+//            해당 로직의 모든 클래스 복사 후 질문하기!(썼던 최근 쓰레드에 그대로입력, 거기가 지금까지 워크플로우 제일 잘 학습되어있음)
         TotalReportRes totalReportRes = TotalReportRes.from(reportData, reportDescription);
 
-        // 근데 이럴거면 차라리 pop, pri, inc을 하나로 묶고, description으로 총 두개의 인자만 넣는게 깔끔하지 않나?
+        // 이후
         Report report = Report.create(member, req, totalReportRes, objectMapper);
 
-        long ms = (System.nanoTime() - t0) / 1_000_000;
-        log.debug("[REPORT] report created in {} ms", ms);
-        return ReportRes.from(report);
+        return ReportRes.from(reportRepository.save(report));
     }
 
 
     /** ----------helper **/
-
     // ReportReq로부터 {PopulationRes, PriceRes, IncomeConsumptionRes}로 가공해주는 함수. 이후에 ai한테 넘겨서 전체 설명을 포함한 TotalReportRes로 만든다.
     private ReportData preprocess(ReportReq req) {
+
+        // 키워드는 상황에 따라 채움(없으면 null/빈 리스트) -> 구현 예정
+        KeywordReportRes keywordsReportRes = keywordsService.getExtractedKeyword(req);
 
         PopulationRes populationRes = populationService.getPopulationData(req);
 
@@ -78,10 +79,6 @@ public class ReportService {
 
         IncomeConsumptionRes incomeConsumptionRes = incomeConsumptionService.getIncomeConsumptionData(req);
 
-
-        // 키워드는 상황에 따라 채움(없으면 null/빈 리스트) -> 구현 예정
-        List<KeywordEntry> keywords = java.util.Collections.emptyList();
-
-        return ReportData.of(populationRes, priceRes, incomeConsumptionRes, keywords);
+        return ReportData.of(keywordsReportRes, populationRes, priceRes, incomeConsumptionRes);
     }
 }
