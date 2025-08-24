@@ -10,6 +10,7 @@ public class CorsConfig implements WebMvcConfigurer {
         r.addMapping("/**")
                 .allowedOriginPatterns(
                         "https://www.guseokguseok.site",
+                        "https://guseokguseok.site",
                         "https://api.guseokguseok.site",
                         "http://localhost:*",
                         "http://127.0.0.1:*",

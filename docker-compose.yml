@@ -1,6 +1,4 @@
-# version: '3.8' 불필요: 최신 Docker Desktop이나 docker compose CLI는 Compose Specification (스펙) 를 따릅
-
-name: cleopatra # 프로젝트명 고정(볼륨/네트워크 접두사 고정)
+name: cleopatra
 
 services:
   ai:
@@ -36,10 +34,10 @@ services:
     deploy:
       resources:
         limits:
-          memory: 800M    # MySQL 메모리 최대 800MB 제한
+          memory: 800M
         reservations:
-          memory: 400M    # MySQL 최소 예약 메모리 400MB
-    cpu_shares: 512     # CPU 우선순위 (기본 1024), 512는 절반 정도 할당
+          memory: 400M
+    cpu_shares: 512
 
   mongo:
     image: mongo:7.0
@@ -72,7 +70,6 @@ services:
 
   application:
     image: kimgt2828/cleopatra-server:latest
-    #build: .
     container_name: cleopatra-application
     env_file:
       - .env
@@ -81,8 +78,7 @@ services:
         condition: service_healthy
       mongo:
         condition: service_healthy
-    restart: on-failure   # 선택(권장): DB 준비되면 자동 재시작
-    # ports, networks 등 기존 그대로
+    restart: on-failure
     ports:
       - "8080:8080"
     networks:
@@ -93,7 +89,7 @@ services:
     container_name: cleopatra-nginx
     restart: always
     ports:
-      - "80:80"  # HTTP 요청을 80번 포트에서 받음
+      - "80:80"
       - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
@@ -111,13 +107,12 @@ services:
       - ./certbot/www:/var/www/certbot
       - ./certbot/conf:/etc/letsencrypt
 
-
 networks:
   my-network:
     driver: bridge
 
 volumes:
   mongo_data:
-    name: cleopatra-mongo-data   # 명시적 이름으로 CI 경로 변화와 무관
+    name: cleopatra-mongo-data
   mysql_data:
     name: cleopatra-mysql-data

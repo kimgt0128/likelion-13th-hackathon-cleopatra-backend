@@ -45,11 +45,11 @@ public class KeywordExtractService {
         Map<String, List<KeywordDescriptionReq.Snippet>> data = new LinkedHashMap<>();
         data.put("data_naver_blog",  toSnippets(blogs));
         data.put("data_naver_palce", toSnippets(places)); // 사양 철자 유지
-        // data.put("data_youtube",     toSnippets(yt)); // 필요 시 활성화
+        // data.put("data_youtube",     toSnippets(yt));   // 필요 시 활성화
 
         KeywordDescriptionReq payload = KeywordDescriptionReq.of(req, data);
 
-        // 3) AI 호출
+        // 3) AI 호출 (base-url = http://ai:8000/api/ai)
         KeywordDescriptionRes ai = webClient.post()
                 .uri("/analyze")
                 .bodyValue(payload)
@@ -57,7 +57,7 @@ public class KeywordExtractService {
                 .bodyToMono(KeywordDescriptionRes.class)
                 .block();
 
-        // 4) 응답 → 플랫폼별 KeywordDoc 생성(빌더 금지, 생성자 사용) 및 저장
+        // 4) 응답 → 저장
         List<KeywordDoc> toSave = new ArrayList<>();
         if (ai != null && ai.getData() != null) {
             for (PlatformBlock b : ai.getData().values()) {
@@ -91,9 +91,7 @@ public class KeywordExtractService {
         );
     }
 
-
     // --- helper
-
     private int sizeOf(List<?> xs) { return xs == null ? 0 : xs.size(); }
 
     private List<KeywordDescriptionReq.Snippet> toSnippets(List<ContentDoc> list) {
