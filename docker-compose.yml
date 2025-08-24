@@ -62,7 +62,10 @@ services:
     image: kimgt2828/cleopatra-server:latest
     container_name: cleopatra-application
     env_file: [.env]
+    volumes:
+      - ./application.yml:/app/config/application.yml:ro
     environment:
+      SPRING_CONFIG_ADDITIONAL_LOCATION: file:/app/config/
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
     depends_on:
       ai-report3:
