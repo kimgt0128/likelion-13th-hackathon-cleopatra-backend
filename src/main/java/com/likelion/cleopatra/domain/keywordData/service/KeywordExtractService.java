@@ -51,7 +51,7 @@ public class KeywordExtractService {
 
         // 3) AI 호출
         KeywordDescriptionRes ai = webClient.post()
-                .uri("/alalyze")
+                .uri("/analyze")
                 .bodyValue(payload)
                 .retrieve()
                 .bodyToMono(KeywordDescriptionRes.class)

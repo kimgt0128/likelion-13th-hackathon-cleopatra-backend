@@ -6,6 +6,7 @@ import com.likelion.cleopatra.global.common.enums.keyword.Primary;
 import com.likelion.cleopatra.global.common.enums.keyword.Secondary;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -15,19 +16,19 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class KeywordExtractReq {
     @Schema(description = "행정 구역", example = "노원구", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotBlank
+    @NotNull
     private District district;
 
     @Schema(description = "행정동", example = "공릉동", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotBlank
+    @NotNull
     private Neighborhood neighborhood;
 
     @Schema(description = "1차 카테고리", example = "외식업", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotBlank
+    @NotNull
     private Primary primary;
 
 
     @Schema(description = "2차 카테고리", example = "일식", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotBlank
+    @NotNull
     private Secondary secondary;
 }
