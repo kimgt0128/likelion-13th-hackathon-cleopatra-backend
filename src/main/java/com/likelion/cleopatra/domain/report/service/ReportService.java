@@ -76,6 +76,16 @@ public class ReportService {
         return ReportListRes.from(reports);
     }
 
+    public ReportDetailRes get(String primaryKey, Long reportId) {
+        Member member = memberRepository.findByPrimaryKey(primaryKey)
+                .orElseThrow(() -> new IllegalArgumentException("member not found: " + primaryKey));
+
+        Report report = reportRepository.findByIdAndMember(reportId, member)
+                .orElseThrow(() -> new IllegalArgumentException("report not found: " + reportId));
+
+        return ReportDetailRes.from(report, objectMapper);
+    }
+
 
     /** ----------helper **/
     // ReportReq로부터 {PopulationRes, PriceRes, IncomeConsumptionRes}로 가공해주는 함수. 이후에 ai한테 넘겨서 전체 설명을 포함한 TotalReportRes로 만든다.
@@ -96,13 +106,4 @@ public class ReportService {
         return ReportData.of(keywordsReportRes, populationRes, priceRes, incomeConsumptionRes);
     }
 
-    public ReportDetailRes get(String primaryKey, Long reportId) {
-        Member member = memberRepository.findByPrimaryKey(primaryKey)
-                .orElseThrow(() -> new IllegalArgumentException("member not found: " + primaryKey));
-
-        Report report = reportRepository.findByIdAndMember(reportId, member)
-                .orElseThrow(() -> new IllegalArgumentException("report not found: " + reportId));
-
-        return ReportDetailRes.from(report, objectMapper);
-    }
 }

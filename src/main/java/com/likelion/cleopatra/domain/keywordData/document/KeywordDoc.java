@@ -22,15 +22,36 @@ public class KeywordDoc {
     @Id
     private String id;
 
-    /** 수집 기준 키(예: 검색어) */
+    /** 수집 기준 키(예: "외식업 일식") */
     private String keyword;
 
     private District district;
     private Neighborhood neighborhood;
     private Primary primary;
     private Secondary secondary;
+
     private Platform platform;
     private List<String> keywords;
     private String descript;
 
+    /** 서비스에서 사용할 전용 생성자(id 제외) */
+    public KeywordDoc(
+            String keyword,
+            District district,
+            Neighborhood neighborhood,
+            Primary primary,
+            Secondary secondary,
+            Platform platform,
+            List<String> keywords,
+            String descript
+    ) {
+        this.keyword = keyword;
+        this.district = district;
+        this.neighborhood = neighborhood;
+        this.primary = primary;
+        this.secondary = secondary;
+        this.platform = platform;
+        this.keywords = keywords;
+        this.descript = descript;
+    }
 }
