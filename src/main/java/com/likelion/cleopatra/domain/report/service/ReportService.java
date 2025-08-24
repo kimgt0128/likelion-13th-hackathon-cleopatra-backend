@@ -12,7 +12,8 @@ import com.likelion.cleopatra.domain.member.repository.MemberRepository;
 import com.likelion.cleopatra.domain.openApi.rtms.service.RtmsService;
 import com.likelion.cleopatra.domain.population.dto.PopulationRes;
 import com.likelion.cleopatra.domain.population.service.PopulationService;
-import com.likelion.cleopatra.domain.report.ReportListRes;
+import com.likelion.cleopatra.domain.report.dto.ReportDetailRes;
+import com.likelion.cleopatra.domain.report.dto.ReportListRes;
 import com.likelion.cleopatra.domain.report.dto.report.TotalReportRes;
 import com.likelion.cleopatra.domain.report.dto.report.ReportData;
 import com.likelion.cleopatra.domain.report.dto.report.ReportReq;
@@ -93,5 +94,15 @@ public class ReportService {
         IncomeConsumptionRes incomeConsumptionRes = incomeConsumptionService.getIncomeConsumptionData(req);
 
         return ReportData.of(keywordsReportRes, populationRes, priceRes, incomeConsumptionRes);
+    }
+
+    public ReportDetailRes get(String primaryKey, Long reportId) {
+        Member member = memberRepository.findByPrimaryKey(primaryKey)
+                .orElseThrow(() -> new IllegalArgumentException("member not found: " + primaryKey));
+
+        Report report = reportRepository.findByIdAndMember(reportId, member)
+                .orElseThrow(() -> new IllegalArgumentException("report not found: " + reportId));
+
+        return ReportDetailRes.from(report, objectMapper);
     }
 }

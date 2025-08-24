@@ -1,6 +1,7 @@
 package com.likelion.cleopatra.domain.report.controller;
 
-import com.likelion.cleopatra.domain.report.ReportListRes;
+import com.likelion.cleopatra.domain.report.dto.ReportDetailRes;
+import com.likelion.cleopatra.domain.report.dto.ReportListRes;
 import com.likelion.cleopatra.domain.report.dto.report.ReportReq;
 import com.likelion.cleopatra.domain.report.dto.report.ReportRes;
 import com.likelion.cleopatra.domain.report.service.ReportService;
@@ -45,5 +46,19 @@ public class ReportController {
             @PathVariable("primary_key") String primaryKey
     ) {
         return ApiResponse.success(reportService.getAll(primaryKey));
+    }
+
+    @GetMapping("/{primary_key}/{report_id}")
+    @Operation(
+            summary = "리포트 상세 조회",
+            description = "멤버의 특정 리포트를 상세 조회합니다.\n예) GET /api/report/{primary_key}/{report_id}"
+    )
+    public ApiResponse<ReportDetailRes> detail(
+            @Parameter(description = "멤버 식별 키", example = "1111")
+            @PathVariable("primary_key") String primaryKey,
+            @Parameter(description = "리포트 ID", example = "1")
+            @PathVariable("report_id") Long reportId
+    ) {
+        return ApiResponse.success(reportService.get(primaryKey, reportId));
     }
 }

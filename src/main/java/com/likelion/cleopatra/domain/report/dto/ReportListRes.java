@@ -1,4 +1,4 @@
-package com.likelion.cleopatra.domain.report;
+package com.likelion.cleopatra.domain.report.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
