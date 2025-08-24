@@ -17,16 +17,14 @@ public enum Neighborhood {
     HAGYE_DONG("하계동"),
     OTHER_DONG("기타");
 
-    private final String ko; // 한글 라벨(요청/표시/검색어 생성용)
-
+    private final String ko;
     Neighborhood(String ko) { this.ko = ko; }
 
-    /** JSON -> Enum : 한글만 받는다. ("공릉동", "하계동") */
+    /** 요청(JSON): 한글만 허용. '동' 생략 시 자동 보정 */
     @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public static Neighborhood fromJson(String raw) {
         if (raw == null) return null;
         String s = raw.trim();
-        // '동' 생략 허용: "공릉" -> "공릉동"
         String norm = s.endsWith("동") ? s : s + "동";
         for (Neighborhood n : values()) {
             if (n.ko.equals(norm)) return n;
@@ -34,10 +32,9 @@ public enum Neighborhood {
         throw new IllegalArgumentException("지원하지 않는 동: " + raw);
     }
 
-    /** Enum -> JSON : 한글 라벨로 나간다. */
+    /** 응답(JSON): 한글로 출력 */
     @JsonValue
     public String toJson() { return ko; }
 
-    /** 저장/인덱스용 코드 (DB에는 이 값을 사용) */
-    public String code() { return name(); } // 예: GONGNEUNG_DONG
+    public String code() { return name(); }
 }
