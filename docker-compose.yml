@@ -4,7 +4,7 @@ name: cleopatra # 프로젝트명 고정(볼륨/네트워크 접두사 고정)
 
 services:
   ai:
-    image: ai_report2:latest
+    image: dddododo/ai-report2:latest
     container_name: dddododo
     ports:
       - "8000:8000"
