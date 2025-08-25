@@ -19,6 +19,7 @@ public class JacksonConfig {
         objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.LOWER_CAMEL_CASE);
         objectMapper.configure(DeserializationFeature.READ_ENUMS_USING_TO_STRING, true);
 
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         return objectMapper;
     }
 }
