@@ -1,5 +1,7 @@
 package com.likelion.cleopatra.domain.keywordData.service;
 
+// 로그 찍기
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.likelion.cleopatra.domain.collect.repository.ContentRepository;
 import com.likelion.cleopatra.domain.crwal.document.ContentDoc;
 import com.likelion.cleopatra.domain.keywordData.document.KeywordDoc;
@@ -10,6 +12,7 @@ import com.likelion.cleopatra.domain.keywordData.dto.webClient.KeywordDescriptio
 import com.likelion.cleopatra.domain.keywordData.dto.webClient.KeywordDescriptionRes.PlatformBlock;
 import com.likelion.cleopatra.domain.keywordData.repository.KeywordRepository;
 import com.likelion.cleopatra.global.common.enums.Platform;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -17,19 +20,23 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class KeywordExtractService {
 
     private final ContentRepository contentRepository;
     private final KeywordRepository keywordRepository;
     private final WebClient webClient;
+    private final ObjectMapper mapper;
 
     public KeywordExtractService(ContentRepository contentRepository,
                                  KeywordRepository keywordRepository,
-                                 @Qualifier("keywordWebClient") WebClient webClient) {
+                                 @Qualifier("keywordWebClient") WebClient webClient,
+                                 ObjectMapper mapper) {
         this.contentRepository = contentRepository;
         this.keywordRepository = keywordRepository;
         this.webClient = webClient;
+        this.mapper = mapper;
     }
 
     /** 행정구역+카테고리 기반 수집 → AI 요약 → 플랫폼별 문서 저장 → 요약 응답 */
@@ -41,6 +48,11 @@ public class KeywordExtractService {
         List<ContentDoc> places = contentRepository.findTop30ByPlatformAndKeywordOrderByCrawledAtDesc(Platform.NAVER_PLACE, category);
         List<ContentDoc> yt     = contentRepository.findTop30ByPlatformAndKeywordOrderByCrawledAtDesc(Platform.YOUTUBE,    category);
 
+        // [LOG-2] 리포지토리 조회 결과 전체 필드
+        if (!blogs.isEmpty())  log.info("[KeywordExtract] repo NAVER_BLOG count={} docs={}", blogs.size(), asJson(blogs));
+        if (!places.isEmpty()) log.info("[KeywordExtract] repo NAVER_PLACE count={} docs={}", places.size(), asJson(places));
+        if (!yt.isEmpty())     log.info("[KeywordExtract] repo YOUTUBE count={} docs={}", yt.size(), asJson(yt));
+
         // 2) AI 요청 페이로드
         Map<String, List<KeywordDescriptionReq.Snippet>> data = new LinkedHashMap<>();
         data.put("data_naver_blog",  toSnippets(blogs));
@@ -49,6 +61,9 @@ public class KeywordExtractService {
 
         KeywordDescriptionReq payload = KeywordDescriptionReq.of(req, data);
 
+        // [LOG-1] AI 전송 직전 요청 DTO 전체 필드
+        log.info("[KeywordExtract] -> AI request dto={}", asJson(payload));
+
         // 3) AI 호출 (base-url = http://ai:8000/api/ai)
         KeywordDescriptionRes ai = webClient.post()
                 .uri("/analyze")
@@ -56,6 +71,9 @@ public class KeywordExtractService {
                 .retrieve()
                 .bodyToMono(KeywordDescriptionRes.class)
                 .block();
+
+        // [LOG-3] AI 응답 DTO 전체 필드
+        log.info("[KeywordExtract] <- AI response dto={}", asJson(ai));
 
         // 4) 응답 → 저장
         List<KeywordDoc> toSave = new ArrayList<>();
@@ -108,5 +126,10 @@ public class KeywordExtractService {
         if (s == null) return null;
         try { return Platform.valueOf(s.trim().toUpperCase()); }
         catch (Exception e) { return null; }
+    }
+
+    private String asJson(Object o) {
+        try { return mapper.writeValueAsString(o); }
+        catch (Exception e) { return String.valueOf(o); }
     }
 }
