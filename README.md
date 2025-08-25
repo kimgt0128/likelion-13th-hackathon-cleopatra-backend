@@ -23,6 +23,7 @@
 
 
 ## 🧱 아키텍처
+<img width="799" height="724" alt="image" src="https://github.com/user-attachments/assets/3b2d7e2b-cb01-4a7b-82e3-c3d0df553ff2" />
 
 
 
