@@ -41,7 +41,7 @@ public class KeywordExtractService {
 
     /** 행정구역+카테고리 기반 수집 → AI 요약 → 플랫폼별 문서 저장 → 요약 응답 */
     public KeywordExtractRes analyzeAndSave(KeywordExtractReq req) {
-        final String category = req.getPrimary().getKo() + " " + req.getSecondary().getKo();
+        final String category = req.getNeighborhood().getKo() + " " + req.getSecondary().getKo();
 
         // 1) 수집물 조회(최대 30)
         List<ContentDoc> blogs  = contentRepository.findTop30ByPlatformAndKeywordOrderByCrawledAtDesc(Platform.NAVER_BLOG,  category);
@@ -56,7 +56,7 @@ public class KeywordExtractService {
         // 2) AI 요청 페이로드
         Map<String, List<KeywordDescriptionReq.Snippet>> data = new LinkedHashMap<>();
         data.put("data_naver_blog",  toSnippets(blogs));
-        data.put("data_naver_palce", toSnippets(places)); // 사양 철자 유지
+        data.put("data_naver_place", toSnippets(places)); // 사양 철자 유지
         // data.put("data_youtube",     toSnippets(yt));   // 필요 시 활성화
 
         KeywordDescriptionReq payload = KeywordDescriptionReq.of(req, data);
