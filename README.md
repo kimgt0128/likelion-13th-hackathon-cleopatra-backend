@@ -27,7 +27,7 @@
 
 
 
-## ✅ 패키기 구조 설계
+## ✅ 패키지 구조 설계
 ```bash
 cleopatra
 ├─domain
