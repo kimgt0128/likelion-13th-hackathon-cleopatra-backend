@@ -1,7 +1,9 @@
 // src/main/java/com/likelion/cleopatra/domain/aiDescription/dto/ReportDescription.java
 package com.likelion.cleopatra.domain.aiDescription.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.*;
@@ -24,8 +26,11 @@ public class ReportDescription {
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public static class DescriptionSummary {
         private String totalDescription;
+        @JsonProperty("line_1") @JsonAlias("line1")
         private String line1;   // line_1
+        @JsonProperty("line_2") @JsonAlias("line2")
         private String line2;   // line_2
+        @JsonProperty("line_3") @JsonAlias("line3")
         private String line3;   // line_3
     }
 

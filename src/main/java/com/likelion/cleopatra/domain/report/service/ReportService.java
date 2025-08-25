@@ -173,12 +173,16 @@ public class ReportService {
         Integer totalResident = firstInt(root, "total_resident", "totalResident");
 
         // ★ total_resident 없거나 0이면 남/녀 합으로 보강
-        if (totalResident == null || totalResident == 0) { // ★
-            JsonNode genderNode = firstNode(root, "gender", "Gender", "GENDER", "GEN"); // ★
-            Integer male   = firstInt(genderNode != null ? genderNode.get("resident") : null, "male_resident", "maleResident");     // ★
-            Integer female = firstInt(genderNode != null ? genderNode.get("resident") : null, "female_resident", "femaleResident"); // ★
-            if (male != null && female != null) totalResident = male + female; // ★
+// ★ total_resident 없거나 0이면 남/녀 합으로 보강 (gender.resident.* 에서 읽기)
+        if (totalResident == null || totalResident == 0) {
+            JsonNode genderNode   = firstNode(root, "gender", "Gender", "GENDER", "GEN");
+            JsonNode genResident  = (genderNode == null) ? null
+                    : firstNode(genderNode, "resident", "Resident", "RESIDENT");
+            Integer male          = firstInt(genResident, "male_resident", "maleResident");
+            Integer female        = firstInt(genResident, "female_resident", "femaleResident");
+            if (male != null && female != null) totalResident = male + female;
         }
+
 
         // ages
         JsonNode agesNode = firstNode(root, "ages", "age");
