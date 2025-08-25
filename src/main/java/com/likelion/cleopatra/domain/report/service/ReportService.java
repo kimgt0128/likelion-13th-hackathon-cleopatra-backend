@@ -53,7 +53,6 @@ public class ReportService {
 
     @Transactional
     public ReportRes create(String primaryKey, ReportReq req) {
-
         Member member = memberRepository.findByPrimaryKey(primaryKey)
                 .orElseThrow(() -> new IllegalArgumentException("member not found: " + primaryKey));
 
@@ -109,7 +108,7 @@ public class ReportService {
                 .category(req.getPrimary().getKo() + " " + req.getSecondary().getKo())
                 .data(buildPlatformMap(rd.getKeywordReportRes()))
                 .population(mapPopulation(rd.getPopulationRes()))
-                .price(mapPrice(rd.getPriceRes()))
+                .price(mapPrice(rd.getPriceRes()))                  // ★ null 금지/0 채움
                 .incomeConsumption(mapIncome(rd.getIncomeConsumptionRes()))
                 .build();
     }
@@ -120,11 +119,11 @@ public class ReportService {
         if (krr == null) return out;
 
         JsonNode root = objectMapper.valueToTree(krr);
-        // ★ "platforms"가 아니라 실제 응답 필드 "keywords" 에 배열이 들어있음
-        JsonNode arr = root.get("keywords"); // ★ 변경
+        // ★ 실제 응답 배열 필드명은 "keywords"
+        JsonNode arr = root.get("keywords"); // ★
         if (arr != null && arr.isArray()) {
             for (JsonNode p : arr) {
-                String platform = textOfSingle(p, "platform"); // ★ 메서드명 변경(오버로드 구분)
+                String platform = textOfSingle(p, "platform"); // ★
                 List<String> keywords = toStringList(p.get("keywords"));
                 String descript = textOfSingle(p, "descript");
 
@@ -152,7 +151,7 @@ public class ReportService {
         }
     }
 
-    private String textOfSingle(JsonNode n, String field) { // ★ 기존 textOf(String) 혼동 방지
+    private String textOfSingle(JsonNode n, String field) { // ★
         JsonNode v = n == null ? null : n.get(field);
         return v != null && !v.isNull() ? v.asText() : null;
     }
@@ -165,20 +164,20 @@ public class ReportService {
                 .collect(Collectors.toList());
     }
 
-    /** -------- population: 배열/객체 모두 대응 -------- */
+    /** -------- population: 배열/객체 모두 대응 + total 보정 -------- */
     private StrategyReq.Population mapPopulation(PopulationRes src) {
         if (src == null) return null;
 
         JsonNode root = objectMapper.valueToTree(src);
 
-        // total_resident / totalResident
         Integer totalResident = firstInt(root, "total_resident", "totalResident");
 
         // ★ total_resident 없거나 0이면 남/녀 합으로 보강
-        if (totalResident == null || totalResident == 0) { // ★ 추가
-            Integer male   = firstInt(firstNode(root, "gender", "Gender", "GENDER", "GEN"), "male_resident", "maleResident");   // ★ 추가
-            Integer female = firstInt(firstNode(root, "gender", "Gender", "GENDER", "GEN"), "female_resident", "femaleResident"); // ★ 추가
-            if (male != null && female != null) totalResident = male + female; // ★ 추가
+        if (totalResident == null || totalResident == 0) { // ★
+            JsonNode genderNode = firstNode(root, "gender", "Gender", "GENDER", "GEN"); // ★
+            Integer male   = firstInt(genderNode != null ? genderNode.get("resident") : null, "male_resident", "maleResident");     // ★
+            Integer female = firstInt(genderNode != null ? genderNode.get("resident") : null, "female_resident", "femaleResident"); // ★
+            if (male != null && female != null) totalResident = male + female; // ★
         }
 
         // ages
@@ -274,58 +273,71 @@ public class ReportService {
                 .build();
 
         return StrategyReq.Population.builder()
-                .totalResident(totalResident)
+                .totalResident(totalResident) // ★ 보정된 값 사용
                 .ages(ages)
                 .gender(gender)
                 .build();
     }
 
-    // PriceRes -> StrategyReq.Price (명시 매핑)
+    // ★ PriceRes -> StrategyReq.Price : null 금지, 숫자 없으면 0으로 채움
+// ★ PriceRes -> StrategyReq.Price : null 금지, 숫자 없으면 0으로 채움
     private StrategyReq.Price mapPrice(PriceRes src) {
-        if (src == null) return null;
-        JsonNode r = objectMapper.valueToTree(src); // ★ 변경: convertValue 제거, 수동 매핑
-
-        JsonNode big = r.get("big");
-        StrategyReq.Price.Big bigDto = big == null ? null : StrategyReq.Price.Big.builder()
-                .bigAverage(asInt(big, "big_average"))   // ★ 추가
-                .bigMiddle (asInt(big, "big_middle"))    // ★ 추가
-                .bigCount  (asInt(big, "big_count"))     // ★ 추가
-                .build();
-
-        JsonNode small = r.get("small");
-        StrategyReq.Price.Small smallDto = small == null ? null : StrategyReq.Price.Small.builder()
-                .smallAverage(asInt(small, "small_average")) // ★ 추가
-                .smallMiddle (asInt(small, "small_middle"))  // ★ 추가
-                .smallCount  (asInt(small, "small_count"))   // ★ 추가
-                .build();
-
-        Map<String, Integer> tv = null;
-        if (r.has("trading_volume") && !r.get("trading_volume").isNull()) {
-            tv = objectMapper.convertValue(r.get("trading_volume"), Map.class); // ★ 추가
+        if (src == null) {
+            return StrategyReq.Price.builder()
+                    .big(StrategyReq.Price.Big.builder().bigAverage(0).bigMiddle(0).bigCount(0).build())
+                    .small(StrategyReq.Price.Small.builder().smallAverage(0).smallMiddle(0).smallCount(0).build())
+                    .pricePerMeter(0).pricePerPyeong(0)
+                    .tradingVolume(new LinkedHashMap<>(Map.of(
+                            "2024_3_quarter", 0,
+                            "2024_4_quarter", 0,
+                            "2025_1_quarter", 0,
+                            "2025_2_quarter", 0
+                    )))
+                    .build();
         }
 
+        // PriceRes는 평탄한 필드들임에 주의 (bigMedian -> bigMiddle, smallMedian -> smallMiddle 로 매핑)
+        StrategyReq.Price.Big big = StrategyReq.Price.Big.builder()
+                .bigAverage(nzInt(src.getBigAverage()))
+                .bigMiddle (nzInt(src.getBigMedian()))
+                .bigCount  (nzInt(src.getBigCount()))
+                .build();
+
+        StrategyReq.Price.Small small = StrategyReq.Price.Small.builder()
+                .smallAverage(nzInt(src.getSmallAverage()))
+                .smallMiddle (nzInt(src.getSmallMedian()))
+                .smallCount  (nzInt(src.getSmallCount()))
+                .build();
+
+        Map<String, Integer> tv = new LinkedHashMap<>();
+        Map<String, Long> raw = src.getTradingVolume();
+        tv.put("2024_3_quarter", raw != null && raw.get("2024_3_quarter") != null ? raw.get("2024_3_quarter").intValue() : 0);
+        tv.put("2024_4_quarter", raw != null && raw.get("2024_4_quarter") != null ? raw.get("2024_4_quarter").intValue() : 0);
+        tv.put("2025_1_quarter", raw != null && raw.get("2025_1_quarter") != null ? raw.get("2025_1_quarter").intValue() : 0);
+        tv.put("2025_2_quarter", raw != null && raw.get("2025_2_quarter") != null ? raw.get("2025_2_quarter").intValue() : 0);
+
         return StrategyReq.Price.builder()
-                .big(bigDto)
-                .small(smallDto)
-                .pricePerMeter (asInt(r, "price_per_meter"))  // ★ 추가
-                .pricePerPyeong(asInt(r, "price_per_pyeong")) // ★ 추가
+                .big(big)
+                .small(small)
+                .pricePerMeter (nzInt(src.getPricePerMeter()))
+                .pricePerPyeong(nzInt(src.getPricePerPyeong()))
                 .tradingVolume (tv)
                 .build();
     }
 
-    // IncomeConsumptionRes -> StrategyReq.IncomeConsumption (소득 보강)
+    // IncomeConsumptionRes -> StrategyReq.IncomeConsumption
     private StrategyReq.IncomeConsumption mapIncome(IncomeConsumptionRes src) {
         if (src == null) return null;
-        JsonNode r = objectMapper.valueToTree(src); // ★ 변경: 일부 명시 매핑
+        JsonNode r = objectMapper.valueToTree(src);
 
         JsonNode incomeNode = r.get("income");
         StrategyReq.IncomeConsumption.Income income = StrategyReq.IncomeConsumption.Income.builder()
-                .monthlyIncomeAverage(firstInt(incomeNode, "monthly_income_average", "monthlyIncomeAverage")) // ★ 추가
-                .incomeClassCode    (textOf(incomeNode, "income_class_code", "incomeClassCode"))             // ★ 추가
+                .monthlyIncomeAverage(firstInt(incomeNode, "monthly_income_average", "monthlyIncomeAverage"))
+                .incomeClassCode    (textOf(incomeNode, "income_class_code", "incomeClassCode"))
                 .build();
 
         StrategyReq.IncomeConsumption.Consumption consumption =
-                objectMapper.convertValue(r.get("consumption"), StrategyReq.IncomeConsumption.Consumption.class); // ★ 유지
+                objectMapper.convertValue(r.get("consumption"), StrategyReq.IncomeConsumption.Consumption.class);
 
         return StrategyReq.IncomeConsumption.builder()
                 .income(income)
@@ -348,15 +360,19 @@ public class ReportService {
 
     private Integer firstInt(JsonNode node, String... keys) {
         JsonNode n = firstNode(node, keys);
-        return n == null || n.isMissingNode() || n.isNull() ? null : (n.isNumber() ? n.intValue() : tryParseInt(n.asText())); // ★ 약간 보강
+        return n == null || n.isMissingNode() || n.isNull()
+                ? null
+                : (n.isNumber() ? n.intValue() : tryParseInt(n.asText()));
     }
 
     private Double firstDouble(JsonNode node, String... keys) {
         JsonNode n = firstNode(node, keys);
-        return n == null || n.isMissingNode() || n.isNull() ? null : (n.isNumber() ? n.doubleValue() : tryParseDouble(n.asText())); // ★ 보강
+        return n == null || n.isMissingNode() || n.isNull()
+                ? null
+                : (n.isNumber() ? n.doubleValue() : tryParseDouble(n.asText()));
     }
 
-    private String textOf(JsonNode n, String... keys) { // ★ 추가(가변 인자)
+    private String textOf(JsonNode n, String... keys) {
         JsonNode v = firstNode(n, keys);
         return (v == null || v.isNull()) ? null : v.asText();
     }
@@ -369,7 +385,7 @@ public class ReportService {
         return null;
     }
 
-    private Integer asInt(JsonNode n, String k) { // ★ 추가 (double->int 반올림 대응)
+    private Integer asInt(JsonNode n, String k) {
         if (n == null || !n.has(k) || n.get(k).isNull()) return null;
         JsonNode v = n.get(k);
         if (v.isNumber()) {
@@ -379,11 +395,19 @@ public class ReportService {
         return tryParseInt(v.asText());
     }
 
-    private Integer tryParseInt(String s) { // ★ 추가
+    private Integer tryParseInt(String s) {
         try { return (int) Math.round(Double.parseDouble(s)); } catch (Exception e) { return null; }
     }
 
-    private Double tryParseDouble(String s) { // ★ 추가
+    private Double tryParseDouble(String s) {
         try { return Double.parseDouble(s); } catch (Exception e) { return null; }
+    }
+
+    // ★ Number -> int(반올림), null이면 0
+    private Integer nzInt(Number n) { // ★
+        if (n == null) return 0;
+        if (n instanceof Integer i) return i;
+        if (n instanceof Long l) return l.intValue();
+        return (int) Math.round(n.doubleValue());
     }
 }
