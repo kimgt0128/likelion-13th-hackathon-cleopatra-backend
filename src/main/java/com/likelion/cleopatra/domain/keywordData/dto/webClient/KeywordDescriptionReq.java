@@ -10,7 +10,7 @@ import java.util.Map;
 public class KeywordDescriptionReq {
 
     private String area;    // 예: "노원구 공릉동"
-    private String category; // 예: "외식업 일식"
+    private String category; // 예: "공릉동 일식"
 
     // "data_naver_blog", "data_naver_palce", "data_youtube"
     private Map<String, List<Snippet>> data;
@@ -25,7 +25,7 @@ public class KeywordDescriptionReq {
     public static KeywordDescriptionReq of(KeywordExtractReq req,
                                            Map<String, List<Snippet>> data) {
         String area = req.getDistrict().getKo() + " " + req.getNeighborhood().getKo();
-        String category = req.getPrimary().getKo() + " " + req.getSecondary().getKo();
+        String category = req.getNeighborhood().getKo() + " " + req.getSecondary().getKo();
         return KeywordDescriptionReq.builder()
                 .area(area)
                 .category(category)
