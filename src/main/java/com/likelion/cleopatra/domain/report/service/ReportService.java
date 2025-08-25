@@ -1,8 +1,10 @@
 package com.likelion.cleopatra.domain.report.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.likelion.cleopatra.domain.aiDescription.DescriptionService;
 import com.likelion.cleopatra.domain.aiDescription.dto.ReportDescription;
+import com.likelion.cleopatra.domain.aiDescription.dto.StrategyReq;
 import com.likelion.cleopatra.domain.incomeConsumption.dto.IncomeConsumptionRes;
 import com.likelion.cleopatra.domain.incomeConsumption.service.IncomeConsumptionService;
 import com.likelion.cleopatra.domain.keywordData.dto.report.KeywordReportRes;
@@ -28,7 +30,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.YearMonth;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -53,12 +60,13 @@ public class ReportService {
 
         ReportData reportData = preprocess(req);
         // 여기서부터 keyword를 포함하여 다시 응답 가져오도록
-        ReportDescription reportDescription = descriptionService.getDescription(reportData);
-//        이제 데이터로 AI가판단해서 AI 설명을 포함한 진짜 전체 보고서용 데이터를 가져오는지 정합성 판단
-//                1. 데이터 추출 형식(노션의 DTO와 비교)
-//                2. 데이터 가져올시 논리적 오류가 없는지 확인
-//                이대로 GPT한테 물어보기!!
-//            해당 로직의 모든 클래스 복사 후 질문하기!(썼던 최근 쓰레드에 그대로입력, 거기가 지금까지 워크플로우 제일 잘 학습되어있음)
+
+
+        // ReportData -> AI 계약 스키마(StrategyReq)로 변환
+        StrategyReq strategyReq = toStrategyReq(req, reportData);
+        // AI 설명 수신
+        ReportDescription reportDescription = descriptionService.getDescription(strategyReq);
+
         TotalReportRes totalReportRes = TotalReportRes.from(reportData, reportDescription);
 
         // 이후
@@ -104,6 +112,86 @@ public class ReportService {
         IncomeConsumptionRes incomeConsumptionRes = incomeConsumptionService.getIncomeConsumptionData(req);
 
         return ReportData.of(keywordsReportRes, populationRes, priceRes, incomeConsumptionRes);
+    }
+
+    private StrategyReq toStrategyReq(ReportReq req, ReportData rd) {
+        return StrategyReq.builder()
+                .area(req.getDistrict().getKo() + " " + req.getNeighborhood().getKo())
+                .category(req.getPrimary().getKo() + " " + req.getSecondary().getKo())
+                .data(buildPlatformMap(rd.getKeywordReportRes()))
+                .population(mapPopulation(rd.getPopulationRes()))
+                .price(mapPrice(rd.getPriceRes()))
+                .incomeConsumption(mapIncome(rd.getIncomeConsumptionRes()))
+                .build();
+    }
+
+    // KeywordReportRes -> data_naver_* 맵 구성
+    private Map<String, StrategyReq.PlatformBlock> buildPlatformMap(KeywordReportRes krr) {
+        Map<String, StrategyReq.PlatformBlock> out = new LinkedHashMap<>();
+        if (krr == null) return out;
+
+        // 플랫폼 리스트를 안전하게 파싱(JsonNode 사용) — 실제 필드명: platforms[].{platform, keywords[], descript}
+        JsonNode root = objectMapper.valueToTree(krr);
+        JsonNode platforms = root.get("platforms");
+        if (platforms != null && platforms.isArray()) {
+            for (JsonNode p : platforms) {
+                String platform = textOf(p, "platform");
+                List<String> keywords = toStringList(p.get("keywords"));
+                String descript = textOf(p, "descript");
+
+                String key = platformKey(platform); // data_naver_place 철자 주의
+                if (key != null) {
+                    out.put(key, StrategyReq.PlatformBlock.builder()
+                            .platform(platform)
+                            .platformKeyword(keywords)
+                            .platformDescription(descript)
+                            .build());
+                }
+            }
+        }
+        return out;
+    }
+
+    private String platformKey(String platform) {
+        if (platform == null) return null;
+        String s = platform.trim().toUpperCase(Locale.ROOT);
+        switch (s) {
+            case "NAVER_BLOG":  return "data_naver_blog";
+            case "NAVER_PLACE": return "data_naver_place"; // ← place
+            case "YOUTUBE":     return "data_youtube";
+            default:            return null;
+        }
+    }
+
+    private String textOf(JsonNode n, String field) {
+        JsonNode v = n == null ? null : n.get(field);
+        return v != null && !v.isNull() ? v.asText() : null;
+    }
+
+    private List<String> toStringList(JsonNode arr) {
+        if (arr == null || !arr.isArray()) return List.of();
+        return StreamSupport.stream(arr.spliterator(), false)
+                .filter(x -> x != null && !x.isNull())
+                .map(JsonNode::asText)
+                .collect(Collectors.toList());
+    }
+
+    // PopulationRes -> StrategyReq.Population
+    private StrategyReq.Population mapPopulation(PopulationRes src) {
+        if (src == null) return null;
+        return objectMapper.convertValue(src, StrategyReq.Population.class);
+    }
+
+    // PriceRes -> StrategyReq.Price
+    private StrategyReq.Price mapPrice(PriceRes src) {
+        if (src == null) return null;
+        return objectMapper.convertValue(src, StrategyReq.Price.class);
+    }
+
+    // IncomeConsumptionRes -> StrategyReq.IncomeConsumption
+    private StrategyReq.IncomeConsumption mapIncome(IncomeConsumptionRes src) {
+        if (src == null) return null;
+        return objectMapper.convertValue(src, StrategyReq.IncomeConsumption.class);
     }
 
 }

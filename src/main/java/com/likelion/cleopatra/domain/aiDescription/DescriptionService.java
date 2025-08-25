@@ -1,36 +1,47 @@
 // src/main/java/com/likelion/cleopatra/domain/aiDescription/DescriptionService.java
 package com.likelion.cleopatra.domain.aiDescription;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.likelion.cleopatra.domain.aiDescription.dto.ReportDescription;
+import com.likelion.cleopatra.domain.aiDescription.dto.StrategyReq;
 import com.likelion.cleopatra.domain.report.dto.report.ReportData;
+import com.likelion.cleopatra.domain.report.dto.report.ReportReq;
+import com.likelion.cleopatra.global.exception.response.ApiResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
-/**
- * - WebClient로 AI 서비스 호출해 ReportDescription 수신.
- * - 실패 시 기본 문구로 폴백.
- */
-
+@Slf4j
 @Service
 public class DescriptionService {
 
     private final WebClient webClient;
+    private final ObjectMapper mapper;
 
-    public DescriptionService(@Qualifier("descriptionWebClient") WebClient webClient) {
+    public DescriptionService(
+            @Qualifier("descriptionWebClient") WebClient webClient,
+            ObjectMapper mapper
+    ) {
         this.webClient = webClient;
+        this.mapper = mapper;
     }
 
-    public ReportDescription getDescription(ReportData data) {
-        // TODO: 실제 엔드포인트/요청스키마에 맞게 body 변환
+    public ReportDescription getDescription(StrategyReq req) {
         try {
-            return webClient.post()
+            log.info("[Report] -> AI /strategy req={}", mapper.writeValueAsString(req));
+            ApiResponse<ReportDescription> env = webClient.post()
                     .uri("/strategy")
-                    .bodyValue(data) // 필요 시 별도 요청 DTO로 매핑
+                    .bodyValue(req)
                     .retrieve()
-                    .bodyToMono(ReportDescription.class)
+                    .bodyToMono(new ParameterizedTypeReference<ApiResponse<ReportDescription>>() {})
                     .block();
+            ReportDescription res = env == null ? null : env.getData();
+            log.info("[Report] <- AI /strategy res={}", mapper.writeValueAsString(res));
+            return res != null ? res : fallback();
         } catch (Exception e) {
+            log.info("[Report] AI /strategy fallback cause={}", e.toString());
             return fallback();
         }
     }

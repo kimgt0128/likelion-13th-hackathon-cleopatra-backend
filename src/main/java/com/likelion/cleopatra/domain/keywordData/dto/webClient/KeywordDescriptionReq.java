@@ -12,7 +12,7 @@ public class KeywordDescriptionReq {
     private String area;    // 예: "노원구 공릉동"
     private String category; // 예: "공릉동 일식"
 
-    // "data_naver_blog", "data_naver_palce", "data_youtube"
+    // "data_naver_blog", "data_naver_place", "data_youtube"
     private Map<String, List<Snippet>> data;
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
