@@ -24,10 +24,10 @@
 
 ## ✅ 기술스택
 - **Language/Framework**: Java 17, Spring Boot 3.3.5, WebClient, Spring Data JPA
-- **Web/Data**: Spring MVC, Spring Data JPA, Spring Data MongoDB  
 - **Client**: WebClient (외부 AI/공공API 연동), springdoc-openapi  
 - **DB**: MySQL 8.0, MongoDB 7  
 - **Infra**: Docker, Docker Compose, Nginx, GitHub Actions, AWS
+- **Crawling**: Playwright
 
 
 ## 🧱 아키텍처
