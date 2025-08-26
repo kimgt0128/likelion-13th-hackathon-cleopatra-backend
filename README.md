@@ -1,6 +1,14 @@
 # 🐍 멋쟁이 사자처럼 13기 클레오빡돌아 구석구석 Backend
-해커톤 상권분석 보고서 서비스의 백엔드 저장소입니다. 빠른 구현과 안정적 동작을 우선합니다.
 
+## 서비스 소개
+해커톤 상권분석 보고서 서비스의 백엔드 저장소입니다. 빠른 구현과 안정적 동작을 우선합니다.
+<img width="723" height="408" alt="image" src="https://github.com/user-attachments/assets/e1b4e617-2361-4688-a04b-467ab1743b29" />
+
+<img width="1921" height="1080" alt="image" src="https://github.com/user-attachments/assets/ab7f0f30-795b-48d9-8f32-56d7309e90c0" />
+
+<img width="1921" height="1080" alt="image" src="https://github.com/user-attachments/assets/079771d7-fe71-4121-8d62-a5e546169bf7" />
+
+![제목 없는 비디오 - Clipchamp로 제작 (2)](https://github.com/user-attachments/assets/71a07930-3bbf-45c2-aacf-6e11f8be6898)
 
 
 ## 🍀 지향점
